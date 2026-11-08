@@ -4,6 +4,7 @@ import {
   tableChanges,
   tableDefinitions,
   tableNames,
+  type EventId,
   type EventMeta,
   type TableChange,
   type TableName,
@@ -21,6 +22,9 @@ export interface EventLog {
   append(events: readonly WeftEvent[]): Promise<WeftEvent[]>;
   /** Every event in the log, in the order they apply (`compareEvents`). */
   read(): Promise<WeftEvent[]>;
+  has(id: EventId): Promise<boolean>;
+  /** The event that applies last, or null while the log is empty. */
+  latest(): Promise<EventMeta | null>;
   rebuildTables(): Promise<void>;
 }
 
@@ -226,6 +230,16 @@ export async function openEventLog(database: Database): Promise<EventLog> {
     },
     read() {
       return readLog(database);
+    },
+    async has(id) {
+      const { rows } = await database.execute(
+        `SELECT 1 FROM events WHERE id = ?`,
+        [id],
+      );
+      return rows.length > 0;
+    },
+    latest() {
+      return latestEvent(database);
     },
     rebuildTables() {
       return exclusive(rebuild);
