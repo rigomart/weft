@@ -2,10 +2,12 @@ import {
   calendarDay,
   timeOfDay,
   WeftError,
+  type CalendarDay,
   type EntryListItem,
   type FollowUpDate,
   type Weft,
 } from "@weft/contracts";
+import { cn } from "cn";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import { createCapture } from "./capture.ts";
@@ -15,11 +17,11 @@ import { Input } from "./components/ui/input.tsx";
 import { followUpLabel, localDay } from "./follow-up-date.ts";
 import {
   Item,
-  ItemActions,
   ItemContent,
   ItemDescription,
   ItemGroup,
 } from "./components/ui/item.tsx";
+import { glance } from "./glance.ts";
 
 /**
  * What the capture box holds: its text, the Follow-up date's day and time as the date and time
@@ -91,8 +93,12 @@ export function NowView({
   captureBox: CaptureBox;
 }) {
   const { entries, failure: listFailure } = useEntries(weft);
+  const today = useToday();
+  const { groups, loose } = useMemo(
+    () => glance(entries, today),
+    [entries, today],
+  );
   const box = useRef<HTMLInputElement>(null);
-  const today = localDay();
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -137,30 +143,129 @@ export function NowView({
         <FieldError>{failure}</FieldError>
       </form>
       <FieldError>{listFailure}</FieldError>
-      <ItemGroup aria-label="Entries">
-        {entries.map((entry) => (
-          <Item key={entry.entryId} role="listitem" size="sm">
-            <ItemContent>{entry.body}</ItemContent>
-            <ItemActions>
-              {entry.followUpDate && (
-                <time
-                  className="text-sm"
-                  dateTime={followUpDateTime(entry.followUpDate)}
-                >
-                  {followUpLabel(entry.followUpDate, today)}
-                </time>
-              )}
-              <ItemDescription>
-                <time dateTime={entry.writtenAt}>
-                  {writtenOn(entry.writtenAt)}
-                </time>
-              </ItemDescription>
-            </ItemActions>
-          </Item>
-        ))}
-      </ItemGroup>
+      <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="flex flex-col gap-5">
+          {groups.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Nothing is coming back.
+            </p>
+          )}
+          {groups.map((group) => (
+            <section
+              key={group.name}
+              aria-labelledby={headingId(group.name)}
+              className="flex flex-col gap-2"
+            >
+              <GroupHeading name={group.name} count={group.entries.length} />
+              <ItemGroup
+                aria-labelledby={headingId(group.name)}
+                className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2"
+              >
+                {group.entries.map((entry) => (
+                  <Item
+                    key={entry.entryId}
+                    role="listitem"
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "flex-col items-stretch gap-1",
+                      group.name === "Late" && "border-late/40 bg-late/5",
+                    )}
+                  >
+                    <ItemContent>{entry.body}</ItemContent>
+                    <ItemDescription
+                      className={cn(
+                        "self-end text-xs",
+                        group.name === "Late" && "text-late",
+                      )}
+                    >
+                      <time dateTime={followUpDateTime(entry.followUpDate!)}>
+                        {followUpLabel(entry.followUpDate!, today)}
+                      </time>
+                    </ItemDescription>
+                  </Item>
+                ))}
+              </ItemGroup>
+            </section>
+          ))}
+        </div>
+        <section
+          aria-labelledby={headingId("Loose")}
+          className="flex flex-col gap-2"
+        >
+          <GroupHeading name="Loose" count={loose.length} />
+          <p className="text-xs text-muted-foreground">
+            On no thread, and fine as they are.
+          </p>
+          <ItemGroup aria-labelledby={headingId("Loose")} className="gap-1.5">
+            {loose.map((entry) => (
+              <Item
+                key={entry.entryId}
+                role="listitem"
+                variant="outline"
+                size="xs"
+              >
+                <ItemContent className="line-clamp-2">{entry.body}</ItemContent>
+                <ItemDescription className="text-xs">
+                  <time dateTime={entry.writtenAt}>
+                    {writtenOn(entry.writtenAt)}
+                  </time>
+                </ItemDescription>
+              </Item>
+            ))}
+          </ItemGroup>
+          {loose.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nothing loose.</p>
+          )}
+        </section>
+      </div>
     </div>
   );
+}
+
+function GroupHeading({ name, count }: { name: string; count: number }) {
+  return (
+    <h2
+      id={headingId(name)}
+      className={cn(
+        "flex items-baseline gap-2 border-b pb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase",
+        (name === "Today" || name === "Late") && "text-sm",
+        name === "Today" && "text-foreground",
+        name === "Late" && "text-late",
+      )}
+    >
+      <span>{name}</span>
+      <span className="font-normal tabular-nums">{count}</span>
+    </h2>
+  );
+}
+
+function headingId(name: string): string {
+  return `now-${name.toLowerCase().replace(" ", "-")}`;
+}
+
+/** Today on this device's calendar, moving on at local midnight and when the window comes back. */
+function useToday(): CalendarDay {
+  const [today, setToday] = useState(() => localDay());
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    function check() {
+      setToday(localDay());
+      clearTimeout(timer);
+      const midnight = new Date();
+      midnight.setHours(24, 0, 0, 0);
+      timer = setTimeout(check, midnight.getTime() - Date.now() + 50);
+    }
+    check();
+    window.addEventListener("focus", check);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("focus", check);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, []);
+  return today;
 }
 
 function useEntries(weft: Weft) {
@@ -184,7 +289,12 @@ function useEntries(weft: Weft) {
       );
     }
     const unsubscribe = weft.subscribe((change) => {
-      if (change.tables.includes("entries")) load();
+      if (
+        change.tables.includes("entries") ||
+        change.tables.includes("entryThreads")
+      ) {
+        load();
+      }
     });
     load();
     return () => {
