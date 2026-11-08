@@ -1,19 +1,34 @@
-import { createClient, type Client } from "@libsql/client";
-import { pathToFileURL } from "node:url";
+import { makeId, type Weft } from "@weft/contracts";
+import { openLibsqlDatabase } from "@weft/database-libsql";
+import { openDeviceId, openWeft, type Database } from "@weft/store";
 
-export type Database = { client: Client; path: string; sqliteVersion: string };
+export type OpenedWeft = {
+  weft: Weft;
+  database: Database;
+  path: string;
+  sqliteVersion: string;
+};
+
+const randomBytes = (length: number) =>
+  crypto.getRandomValues(new Uint8Array(length));
 
 /**
- * Fails at launch if libsql's native binding is missing or broken. The tables come with the event
- * log (#29).
+ * Opens the event log in the SQLite file at `path`, creating it if it is new. Fails at launch if
+ * libsql's native binding is missing or broken.
  */
-export async function openDatabase(path: string): Promise<Database> {
-  const client = createClient({ url: pathToFileURL(path).href });
+export async function openWeftAt(path: string): Promise<OpenedWeft> {
+  const database = openLibsqlDatabase(path);
   try {
-    const result = await client.execute("SELECT sqlite_version() AS version");
-    return { client, path, sqliteVersion: String(result.rows[0]?.version) };
+    const { rows } = await database.execute(
+      "SELECT sqlite_version() AS version",
+    );
+    const deviceId = await openDeviceId(database, () =>
+      makeId(Date.now(), randomBytes),
+    );
+    const weft = await openWeft({ database, deviceId, now: Date.now });
+    return { weft, database, path, sqliteVersion: String(rows[0]?.version) };
   } catch (error) {
-    client.close();
+    await database.close();
     throw error;
   }
 }

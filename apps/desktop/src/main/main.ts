@@ -1,8 +1,10 @@
-import { app, BrowserWindow, dialog } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { openDatabase, type Database } from "./database.ts";
+import { CHANNELS, type Call } from "../ipc/protocol.ts";
+import { forwardChanges, serveWeft } from "../ipc/serve.ts";
+import { openWeftAt, type OpenedWeft } from "./database.ts";
 import { launchSettings, type Launch } from "./launch.ts";
 import {
   registerRendererScheme,
@@ -10,7 +12,7 @@ import {
   serveRenderer,
 } from "./renderer-protocol.ts";
 
-let database: Database | undefined;
+let opened: OpenedWeft | undefined;
 let window: BrowserWindow | null = null;
 
 const launch = readLaunch();
@@ -61,7 +63,7 @@ function setUp(launch: Launch) {
   }
   app.on("second-instance", showWindow);
   app.on("window-all-closed", () => app.quit());
-  app.on("will-quit", () => database?.client.close());
+  app.on("will-quit", () => void opened?.database.close());
   app
     .whenReady()
     .then(() => start(launch))
@@ -70,14 +72,13 @@ function setUp(launch: Launch) {
 
 async function start(launch: Launch) {
   try {
-    database = await openDatabase(join(launch.userData, "weft.db"));
+    opened = await openWeftAt(join(launch.userData, "weft.db"));
   } catch (error) {
     fail("Weft could not open its database", error);
     return;
   }
-  console.info(
-    `Weft opened ${database.path} (SQLite ${database.sqliteVersion})`,
-  );
+  console.info(`Weft opened ${opened.path} (SQLite ${opened.sqliteVersion})`);
+  serveToWindow(opened);
 
   serveRenderer(join(app.getAppPath(), "dist/renderer"));
   window = new BrowserWindow({
@@ -86,6 +87,7 @@ async function start(launch: Launch) {
     height: 760,
     show: false,
     webPreferences: {
+      preload: join(app.getAppPath(), "dist/preload/preload.cjs"),
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
@@ -118,6 +120,40 @@ async function start(launch: Launch) {
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event) => event.preventDefault());
   await window.loadURL(launch.rendererUrl ?? RENDERER_URL);
+}
+
+/** The window reaches Weft only through these channels (ADR 0005, ADR 0010). */
+function serveToWindow({ weft }: OpenedWeft) {
+  const handlers = serveWeft(weft, (call, error) =>
+    console.error(`Weft failed on ${call}: ${describe(error)}`),
+  );
+  for (const call of ["run", "read"] satisfies Call[]) {
+    ipcMain.handle(CHANNELS[call], (event, message: unknown) => {
+      if (!window || event.sender !== window.webContents) {
+        throw new Error("Weft answers only its own window.");
+      }
+      return handlers[call](message);
+    });
+  }
+  forwardChanges(
+    weft,
+    () => {
+      if (!window || window.isDestroyed()) return undefined;
+      const { webContents } = window;
+      if (webContents.isDestroyed()) return undefined;
+      return { send: (change) => webContents.send(CHANNELS.changed, change) };
+    },
+    (error) =>
+      console.error(
+        `Weft failed to tell its window of a change: ${describe(error)}`,
+      ),
+  );
+}
+
+function describe(error: unknown): string {
+  return error instanceof Error
+    ? (error.stack ?? error.message)
+    : String(error);
 }
 
 function showWindow() {
