@@ -231,6 +231,66 @@ svg text { fill: var(--ink-2); font-size: 11px; }
 #tip small { display: block; opacity: .7; margin-top: 2px; }
 #toast { position: fixed; z-index: 50; pointer-events: none; left: 50%; bottom: 70px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 10px; font-size: 13px; box-shadow: var(--shadow); }
 #toast[hidden] { display: none; }
+
+/* workspace */
+.wbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 12px; }
+.wtip { font-size: 12px; color: var(--ink-3); }
+.dropzone { border: 1.5px dashed var(--ink-3); border-radius: 12px; padding: 6px 14px; color: var(--ink-2); font-size: 13px; background: var(--surface); }
+.dropzone small { color: var(--ink-3); margin-left: 6px; }
+.over { outline: 2px solid var(--accent) !important; outline-offset: 2px; }
+.sugtarget { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px color-mix(in srgb, var(--accent) 60%, transparent); }
+.wc { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 7px 9px 6px; cursor: grab; font-size: 13px; line-height: 1.35; box-shadow: 0 1px 1px rgba(0,0,0,.04); }
+.wc:hover { border-color: var(--ink-3); }
+.wc.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+.wc.twin { outline: 2px dashed var(--accent); outline-offset: 1px; }
+.wc.dragsrc { opacity: .35; }
+.wc .wt { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.wc.ask .wt::before { content: "○ "; color: var(--ink-3); }
+.wc.late .wt::before { color: var(--late); }
+.wc.done .wt::before { content: "✓ "; color: var(--ink-3); }
+.wc .wm { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 4px; font-size: 11.5px; color: var(--ink-3); }
+.wc.late .when { color: var(--late); }
+.wc .also { color: hsl(var(--h) var(--ts) var(--tl)); }
+.wc .also::before { content: "● "; font-size: 9px; }
+.stack > .wc + .wc { margin-top: 6px; }
+.loose-tray { border: 1.5px dashed var(--ink-3); border-radius: 16px; padding: 10px 12px 12px; margin-bottom: 16px; }
+.tray-h { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin-bottom: 8px; }
+.tray-h span:last-child { text-transform: none; letter-spacing: 0; }
+.loose-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.islands { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); grid-auto-rows: 4px; column-gap: 14px; align-items: start; }
+.island, .col, .tray { background: color-mix(in srgb, hsl(var(--h) 60% 50%) 9%, var(--surface)); border: 1px solid color-mix(in srgb, hsl(var(--h) 60% 50%) 22%, var(--surface)); border-radius: 16px; padding: 8px 10px 10px; }
+.island { margin-bottom: 14px; }
+.island.resolved, .col.resolved { opacity: .6; }
+.ih { display: flex; align-items: center; gap: 6px; padding: 2px 2px 8px; cursor: grab; }
+.ih .nm { flex: 1; min-width: 0; font-weight: 650; color: hsl(var(--h) var(--ts) var(--tl)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: text; }
+.ih .ct { font-size: 12px; color: var(--ink-3); }
+.ih button { border: 0; background: transparent; color: var(--ink-3); padding: 0 4px; font-size: 13px; }
+.ih button:hover { color: var(--ink); }
+.ih input { flex: 1; min-width: 0; padding: 3px 8px; border: 1px solid var(--accent); border-radius: 8px; background: var(--surface); font-weight: 600; }
+.collapsed-line { font-size: 12.5px; color: var(--ink-2); padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.more { display: block; margin-top: 6px; border: 0; background: transparent; color: var(--ink-3); font-size: 12px; padding: 2px; }
+.sughere { margin-top: 8px; padding: 6px 8px; border: 1px dashed var(--accent); border-radius: 10px; font-size: 12px; color: var(--accent); display: grid; gap: 4px; }
+.sughere div { display: flex; gap: 6px; align-items: center; justify-content: space-between; }
+.sughere span { flex: 1; min-width: 0; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sughere button { flex: none; }
+.sughere { grid-template-columns: minmax(0, 1fr); }
+.away-list { margin: -4px 0 14px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-size: 13px; }
+.away-list div { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 3px 0; color: var(--ink-3); }
+.cols { display: flex; gap: 12px; overflow-x: auto; align-items: flex-start; padding-bottom: 10px; }
+.col { flex: 0 0 250px; width: 250px; min-width: 0; }
+.col.loosecol { --h: 0; background: transparent; border: 1.5px dashed var(--ink-3); }
+.col.newcol { flex-basis: 140px; background: transparent; border: 1.5px dashed var(--ink-3); color: var(--ink-3); text-align: center; padding: 18px 10px; }
+.desk { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .desk { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.deskpile .wc { font-size: 14px; padding: 10px 12px; }
+.trays { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; align-content: start; }
+.tray { min-height: 92px; cursor: pointer; display: grid; align-content: start; gap: 4px; }
+.tray .ih { cursor: pointer; padding-bottom: 2px; }
+.tray .key { font-size: 11px; border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; color: var(--ink-3); background: var(--surface); }
+.tray .last { font-size: 12px; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tray.plain { --h: 0; background: transparent; border: 1.5px dashed var(--ink-3); }
+.desk-empty { padding: 30px; text-align: center; color: var(--ink-3); border: 1.5px dashed var(--line); border-radius: 14px; }
+g.away { opacity: .3; }
 </style>
 </head>
 <body>
@@ -316,29 +376,28 @@ function seed() {
   // Case 5: the good day
   E("g1", "Hiked with a friend. Felt calm for the first time in weeks. Should do this more.", -18, { sugOn: ["work", "sleep"] });
   E("l1", "Idea: learn to bake bread on weekends.", -5);
-  return { threads, entries, links, pos: {} };
+  return { threads, entries, links, pos: {}, order: threads.map(t => t.id), collapsed: {}, expanded: {} };
 }
 
 // ---------- state ----------
-const KEY = "vita-next-proto-v1";
+const KEY = "vita-next-proto-v2";
 let S;
 try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
 if (!S || !S.entries) S = seed();
+S.order ||= S.threads.map(t => t.id); S.collapsed ||= {}; S.expanded ||= {};
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 
 const VARIANTS = {
-  current: "Vita OS today",
-  lanes: "Threads as lanes through time",
-  canvas: "Your idea: free canvas, app arranges",
-  focus: "One thing and its neighbours",
+  canvas: "Round 1: free canvas",
+  islands: "Groups the app lays out",
+  columns: "One column per thread",
+  desk: "Sort loose cards into trays",
 };
 const VK = Object.keys(VARIANTS);
 const params = new URLSearchParams(location.search);
-let variant = VK.includes(params.get("variant")) ? params.get("variant") : "lanes";
-let tab = params.get("tab") === "now" ? "now" : "map";
+let variant = VK.includes(params.get("variant")) ? params.get("variant") : "islands";
+let tab = ["now", "work", "history"].includes(params.get("tab")) ? params.get("tab") : "work";
 let sel = null;
-let curThread = "t:mum";
-let focusId = "t:mum";
 
 // ---------- graph helpers ----------
 const isT = id => id.startsWith("t:");
@@ -356,7 +415,16 @@ const nameOf = id => { const n = byId(id); return !n ? "?" : isT(id) ? n.name : 
 const trunc = (s, n) => s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s;
 const h = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const hueOf = tid => (byId(tid) || {}).hue ?? 0;
-const chip = (tid, sug) => `<span class="chip${sug ? " sug" : ""}" style="--h:${hueOf(tid)}">${h(byId(tid).name)}</span>`;
+const chip = (tid, sug) => `<span class="chip${sug ? " sug" : ""}" style="--h:${hueOf(tid)}">${h(tname(byId(tid)))}</span>`;
+const isAway = e => !!e && e.awayAt != null;
+const live = arr => arr.filter(e => !isAway(e));
+const liveId = id => isT(id) ? !!byId(id) : !!byId(id) && !isAway(byId(id));
+const tname = t => t.name || "Untitled group";
+function orderedThreads() {
+  const ids = S.order.filter(id => byId(id));
+  S.threads.forEach(t => { if (!ids.includes(t.id)) ids.push(t.id); });
+  S.order = ids; return ids.map(byId);
+}
 const lastActivity = t => Math.max(0, ...entriesOf(t.id).map(e => e.doneAt != null ? e.doneAt : e.at));
 
 // ---------- suggestions ----------
@@ -411,7 +479,7 @@ function newThread(name) {
   const used = S.threads.map(t => t.hue);
   const hues = [210, 320, 100, 260, 10, 160, 50, 230];
   const t = { id: "t:" + Date.now().toString(36), name, hue: hues.find(x => !used.includes(x)) ?? Math.floor(Math.random() * 360) };
-  S.threads.push(t); return t;
+  S.threads.push(t); S.collapsed[t.id] = false; return t;
 }
 function looseCluster(eid) {
   const seen = new Set([eid]), q = [eid];
@@ -424,17 +492,17 @@ function looseCluster(eid) {
 
 // ---------- render ----------
 const $ = id => document.getElementById(id);
-function render() { renderTop(); renderMain(); renderPanel(); renderSwitcher(); save(); }
+function render() {
+  renderTop(); renderMain(); renderPanel(); renderSwitcher(); save();
+  const ri = document.querySelector("[data-rename]");
+  if (ri && document.activeElement !== ri) { ri.focus(); ri.select(); }
+}
 function setUrl() {
-  const p = new URLSearchParams(); p.set("variant", variant); if (tab === "now" && variant !== "current") p.set("tab", "now");
+  const p = new URLSearchParams(); p.set("tab", tab); p.set("variant", variant);
   try { history.replaceState(null, "", "?" + p.toString()); } catch (e) {}
 }
 
 function renderTop() {
-  if (variant === "current") {
-    $("top").innerHTML = `<div class="brand">Vita OS <small>today</small></div><div class="today-title">The same scenario, stored the way Vita OS stores it: every entry gets one home. Read-only.</div>`;
-    return;
-  }
   const ae = document.activeElement && document.activeElement.id;
   const keep = $("cap-text") ? $("cap-text").value : "";
   $("top").innerHTML = `
@@ -446,22 +514,23 @@ function renderTop() {
     </form>
     <div class="tabs" role="group">
       <button data-tab="now" aria-pressed="${tab === "now"}">Now</button>
-      <button data-tab="map" aria-pressed="${tab === "map"}">Map</button>
+      <button data-tab="work" aria-pressed="${tab === "work"}">Workspace</button>
+      <button data-tab="history" aria-pressed="${tab === "history"}">History</button>
     </div>`;
   if (ae === "cap-text") $("cap-text").focus();
 }
 
 function renderMain() {
   const m = $("main");
-  document.body.classList.toggle("panel-open", !!sel && variant !== "current");
-  if (variant === "current") return renderCurrent(m);
+  document.body.classList.toggle("panel-open", !!sel);
   if (tab === "now") return renderNow(m);
-  ({ lanes: renderLanes, canvas: renderCanvas, focus: renderFocus })[variant](m);
+  if (tab === "history") return renderLanes(m);
+  ({ canvas: renderCanvas, islands: renderIslands, columns: renderColumns, desk: renderDesk })[variant](m);
 }
 
 // ---------- Now (the Dashboard, from entries) ----------
 function nowItems() {
-  const items = S.entries.filter(isOpenAsk).map(e => ({ e, ts: e.ask }));
+  const items = live(S.entries).filter(isOpenAsk).map(e => ({ e, ts: e.ask }));
   S.threads.filter(t => t.rhythm && !t.resolvedAt).forEach(t => {
     const add = (t.rhythm.weekday - new Date(T0).getDay() + 7) % 7;
     items.push({ rhythm: t, ts: D(add) });
@@ -486,7 +555,7 @@ function renderNow(m) {
   const items = nowItems(), groups = {};
   items.forEach(it => (groups[groupOf(it.ts)] ||= []).push(it));
   const order = ["Late", "Today", "Tomorrow", "This week", "Later"];
-  const loose = S.entries.filter(e => threadsOf(e.id).length === 0 && !isOpenAsk(e)).sort((a, b) => b.at - a.at);
+  const loose = live(S.entries).filter(e => threadsOf(e.id).length === 0 && !isOpenAsk(e)).sort((a, b) => b.at - a.at);
   const quiet = S.threads.filter(t => !t.resolvedAt && !entriesOf(t.id).some(isOpenAsk));
   m.innerHTML = `<p class="hint">The main view stays the Dashboard: <b>what is asking now</b>, from bring-back dates. The difference is in the chips: an entry shows <b>every</b> thread it is on, and dashed chips are suggestions. Handling something keeps it as a record on its threads instead of deleting it.</p>
   <div class="now"><div>
@@ -602,7 +671,7 @@ function renderLanes(m) {
     const ps = pts(e), xx = x(posTime(e));
     const ask = isOpenAsk(e), late = isLate(e), loose = ps[0].t === null;
     const tip = `${h(e.text)}|${ask ? (late ? "late · " : "comes back ") + fmtDay(e.ask) : md(posTime(e))}${loose ? " · loose" : " · " + threadsOf(e.id).map(t => h(byId(t).name)).join(", ")}`;
-    let s = `<g class="${dim(e.id)}" data-open="${e.id}" data-tip="${tip}">`;
+    let s = `<g class="${dim(e.id)}${isAway(e) ? " away" : ""}" data-open="${e.id}" data-tip="${tip}">`;
     if (ps.length > 1) {
       const ys = ps.map(p => p.y), y1 = Math.min(...ys), y2 = Math.max(...ys);
       s += `<rect class="pill" x="${xx - 8}" y="${y1 - 9}" width="16" height="${y2 - y1 + 18}" rx="8"/>`;
@@ -632,8 +701,7 @@ function renderLanes(m) {
       <span class="nm"><i></i>${h(t.name)}</span><span class="mt">${meta}</span></div>`;
   }).join("") + `<div class="lane-label" style="top:${looseTop}px;height:118px;cursor:default"><span class="nm">Loose</span><span class="mt">${loose.length} not on a thread yet</span></div>`;
 
-  m.innerHTML = `<p class="hint"><b>Time runs left to right; each thread is a line.</b> An entry on two threads sits across both lanes (the white pills). New captures land in Loose at today. Dashed lines are suggestions.
-    <b>Try:</b> click the three back-pain dots in Loose, accept the suggestions, then "Start a thread". Or drop <i>"Mum dizzy again after lunch"</i> above.</p>
+  m.innerHTML = `<p class="hint"><b>History: review what happened and what is next.</b> Time runs left to right; each thread is a line, and an entry on two threads sits across both lanes. Click a lane for its story, or a dot for the entry. Put-away entries stay here, faded.</p>
     <div class="lanes"><div class="lane-labels" style="height:${H}px">${labels}</div>
     <div class="lane-scroll" id="lane-scroll"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg></div></div>
     <div class="legend">
@@ -665,7 +733,7 @@ function nodeSize(id) {
   const e = byId(id), lines = wrap(e.text).length;
   return { w: 176, h: 16 + lines * 15 + (e.ask ? 16 : 0) };
 }
-const allNodes = () => S.threads.map(t => t.id).concat(S.entries.map(e => e.id));
+const allNodes = () => S.threads.map(t => t.id).concat(live(S.entries).map(e => e.id));
 function ensurePos() {
   allNodes().forEach(id => {
     if (S.pos[id]) return;
@@ -685,7 +753,7 @@ function tick(alpha) {
     dx /= d; dy /= d; a.vx -= dx * f; a.vy -= dy * f; b.vx += dx * f; b.vy += dy * f;
   }
   S.links.forEach(l => {
-    const a = P[l.a], b = P[l.b]; if (!a || !b) return;
+    const a = P[l.a], b = P[l.b]; if (!a || !b || !liveId(l.a) || !liveId(l.b)) return;
     const dx = b.x - a.x, dy = b.y - a.y, d = Math.max(1, Math.hypot(dx, dy));
     const f = (d - (l.s ? 230 : 160)) * (l.s ? .012 : .05) * alpha;
     a.vx += dx / d * f; a.vy += dy / d * f; b.vx -= dx / d * f; b.vy -= dy / d * f;
@@ -714,7 +782,7 @@ function drawCanvas() {
   const g = $("cv-g"); if (!g) return;
   g.setAttribute("transform", `translate(${view.tx},${view.ty}) scale(${view.k})`);
   let s = "";
-  S.links.forEach(l => { const a = S.pos[l.a], b = S.pos[l.b]; if (a && b) s += `<line class="${l.s ? "sug" : "cedge"}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`; });
+  S.links.forEach(l => { const a = S.pos[l.a], b = S.pos[l.b]; if (a && b && liveId(l.a) && liveId(l.b)) s += `<line class="${l.s ? "sug" : "cedge"}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`; });
   allNodes().forEach(id => {
     const p = S.pos[id], sz = nodeSize(id), n = byId(id);
     const rot = ((id.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 7) - 3) * .45;
@@ -792,7 +860,7 @@ function renderCanvas(m) {
   }, { passive: false });
 }
 
-// ---------- Focus ----------
+// ---------- Story (thread panel) ----------
 function storyHtml(id, withAccept = true) {
   if (isT(id)) {
     const t = byId(id);
@@ -815,98 +883,139 @@ function storyHtml(id, withAccept = true) {
   return `<div class="story"><h3>${h(trunc(e.text, 70))}</h3><p class="sub">${md(e.at)} · ${threadsOf(id).map(t => chip(t)).join(" ") || "loose"}</p>
     ${nb.map(({ e: x, s }) => `<div class="sline${s ? " sug" : ""}" data-open="${x.id}"><span class="sd">${md(posTime(x))}</span><span class="st"><span>${h(x.text)}</span>${s ? `<span class="sm"><span class="badge">suggested</span></span>` : ""}</span></div>`).join("") || `<p class="sub">No connected entries.</p>`}</div>`;
 }
-function renderFocus(m) {
-  if (!byId(focusId)) focusId = "t:mum";
-  const F = focusId;
-  const ring1 = [...new Set(linksOf(F).map(l => other(l, F)))].filter(byId);
-  const sug1 = new Set(linksOf(F).filter(l => l.s).map(l => other(l, F)));
-  const ring2 = [], parent = {};
-  ring1.forEach(r => linksOf(r).forEach(l => { const o = other(l, r); if (o !== F && !ring1.includes(o) && !ring2.includes(o) && byId(o) && ring2.length < 22) { ring2.push(o); parent[o] = r; } }));
-  const W = 920, H = 460, cx = W / 2, cy = H / 2;
-  const P = { [F]: { x: cx, y: cy } };
-  const order1 = [...ring1].sort((a, b) => (isT(a) - isT(b)) || ((byId(a).at || 0) - (byId(b).at || 0)));
-  order1.forEach((id, i) => { const a = -Math.PI / 2 + i / order1.length * Math.PI * 2; P[id] = { x: cx + Math.cos(a) * 235, y: cy + Math.sin(a) * 140, a }; });
-  const byParent = {}; ring2.forEach(id => (byParent[parent[id]] ||= []).push(id));
-  Object.entries(byParent).forEach(([p, kids]) => kids.forEach((id, i) => { const a = P[p].a + (i - (kids.length - 1) / 2) * .22; P[id] = { x: cx + Math.cos(a) * 395, y: cy + Math.sin(a) * 200, a }; }));
-  let g = "";
-  const edge = (a, b, s, far) => { const pa = P[a], pb = P[b]; if (pa && pb) g += `<line class="${s ? "sug" : "redge"}" ${far ? 'opacity=".25"' : ""} x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}"/>`; };
-  ring1.forEach(id => edge(F, id, sug1.has(id)));
-  ring2.forEach(id => { const l = findLink(id, parent[id]); edge(parent[id], id, l && l.s, true); });
-  const node = (id, far, center) => {
-    const p = P[id], n = byId(id);
-    if (isT(id)) { const w = Math.min(n.name.length, 22) * 7 + 22; return `<g class="rnode${far ? " far" : ""}" data-focus="${id}" style="--h:${n.hue}"><rect x="${p.x - w / 2}" y="${p.y - 13}" width="${w}" height="26" rx="13"/><text class="rt" text-anchor="middle" x="${p.x}" y="${p.y + 4}">${h(trunc(n.name, 22))}</text></g>`; }
-    const ts = threadsOf(id), r = center ? 9 : far ? 4.5 : 6;
-    return `<g class="rnode${far ? " far" : ""}" data-focus="${id}" data-tip="${h(n.text)}" style="--h:${ts.length ? hueOf(ts[0]) : 0}">
-      <circle class="e${ts.length ? "" : " loose"}${isOpenAsk(n) ? " ask" : ""}" cx="${p.x}" cy="${p.y}" r="${r}"/>
-      ${far ? "" : `<text x="${p.x}" y="${center ? p.y + 24 : p.y + 18}" text-anchor="middle" style="font-size:${center ? 12.5 : 11}px">${h(trunc(n.text, center ? 48 : 28))}</text>`}</g>`;
-  };
-  ring2.forEach(id => g += node(id, true));
-  ring1.forEach(id => g += node(id, false));
-  g += node(F, false, true);
-  const openT = S.threads.filter(t => !t.resolvedAt), resT = S.threads.filter(t => t.resolvedAt);
-  const recent = [...S.entries].sort((a, b) => b.at - a.at).slice(0, 12);
-  m.innerHTML = `<p class="hint"><b>One thing in the middle, its neighbours around it, its story below.</b> This is the view for coming back to a thread after weeks: it includes entries that live on other threads too. Click any node to move there.</p>
-  <div class="focus">
-    <div class="picker"><h4>Threads</h4>${openT.map(t => `<button class="${F === t.id ? "on" : ""}" data-focus="${t.id}">${chip(t.id)}</button>`).join("")}
-      ${resT.map(t => `<button class="${F === t.id ? "on" : ""}" data-focus="${t.id}" style="opacity:.6">${chip(t.id)}</button>`).join("")}
-      <h4>Recent entries</h4>${recent.map(e => `<button class="${F === e.id ? "on" : ""}" data-focus="${e.id}" title="${h(e.text)}">${h(e.text)}</button>`).join("")}</div>
-    <div><div class="radial"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${g}</svg></div>${storyHtml(F)}</div>
+// ---------- Workspace (shared by islands, columns and desk) ----------
+let editing = null, showAway = false, drag = null;
+function sugFor(e) {
+  const s = new Set(threadsOf(e.id, true));
+  suggest(e).filter(isT).forEach(t => s.add(t));
+  threadsOf(e.id).forEach(t => s.delete(t));
+  return s;
+}
+const looseEntries = () => live(S.entries).filter(e => !threadsOf(e.id).length).sort((a, b) => b.at - a.at);
+function threadEntries(t) {
+  const es = live(entriesOf(t.id));
+  return es.filter(isOpenAsk).sort((a, b) => a.ask - b.ask).concat(es.filter(e => !isOpenAsk(e)).sort((a, b) => posTime(b) - posTime(a)));
+}
+const isQuiet = t => !live(entriesOf(t.id)).some(isOpenAsk) && dayIdx(lastActivity(t)) < -21;
+const isCollapsed = t => S.collapsed[t.id] ?? (!!t.resolvedAt || isQuiet(t));
+function wcard(e, from) {
+  const ts = threadsOf(e.id), others = ts.filter(t => t !== from);
+  const sg = threadsOf(e.id, true).length + entryNbrs(e.id, true).length;
+  const cls = ["wc", isOpenAsk(e) ? "ask" : "", isLate(e) ? "late" : "", e.ask && e.doneAt ? "done" : "", sel === e.id ? "sel" : ""].join(" ");
+  return `<div class="${cls}" draggable="true" data-drag="${e.id}" data-from="${from || "loose"}" data-eid="${e.id}" data-open="${e.id}"${ts.length ? "" : ` data-drop="${e.id}"`}>
+    <div class="wt">${h(e.text)}</div>
+    <div class="wm">${isOpenAsk(e) ? `<span class="when">${fmtDay(e.ask)}</span>` : `<span>${md(posTime(e))}</span>`}${others.map(t => `<span class="also" style="--h:${hueOf(t)}">also ${h(tname(byId(t)))}</span>`).join("")}${sg ? `<span class="badge">${sg} suggested</span>` : ""}</div>
   </div>`;
 }
-
-// ---------- Current: Vita OS today ----------
-function todayModel() {
-  const T = {}; S.threads.forEach(t => T[t.id] = { tasks: [], notes: [], activity: [] });
-  const standalone = [];
-  S.entries.forEach(e => {
-    const home = threadsOf(e.id)[0];
-    if (!home) { standalone.push(e); return; }
-    const b = T[home];
-    if (isOpenAsk(e)) b.tasks.push(e); else if (e.ask && e.doneAt) b.activity.push(e); else b.notes.push(e);
-  });
-  return { T, standalone };
+function nameHtml(t) {
+  return editing === t.id
+    ? `<input data-rename="${t.id}" value="${h(t.name)}" placeholder="Name this group">`
+    : `<span class="nm" data-act="rename" data-id="${t.id}" title="Rename">${h(tname(t))}</span>`;
 }
-function renderCurrent(m) {
-  const { T, standalone } = todayModel();
-  const items = [];
-  Object.entries(T).forEach(([tid, b]) => b.tasks.forEach(e => items.push({ e, tid, ts: e.ask })));
-  standalone.filter(isOpenAsk).forEach(e => items.push({ e, ts: e.ask }));
-  S.threads.filter(t => t.rhythm && !t.resolvedAt).forEach(t => items.push({ rhythm: t, tid: t.id, ts: D((t.rhythm.weekday - new Date(T0).getDay() + 7) % 7) }));
-  items.sort((a, b) => a.ts - b.ts);
-  const groups = {}; items.forEach(it => (groups[groupOf(it.ts)] ||= []).push(it));
-  const nodate = S.threads.filter(t => !t.resolvedAt && !T[t.id].tasks.length && !t.rhythm);
-  const looseNotes = standalone.filter(e => !e.doneAt);
-  const t = byId(curThread), b = T[curThread];
-  const missing = [];
-  S.entries.forEach(e => {
-    const acc = threadsOf(e.id), sg = threadsOf(e.id, true);
-    if ((acc.includes(curThread) && acc[0] !== curThread) || sg.includes(curThread)) missing.push({ e, where: acc[0] ? byId(acc[0]).name : "a loose Standalone Note" });
-  });
-  m.innerHTML = `<p class="hint">Every entry gets <b>one</b> home: its first thread, or nowhere. A dated one becomes a Task, an undated one a Thread Note, a handled one only a line in the Activity Log. Suggestions don't exist.</p>
-  <div class="cur"><div>
-    ${["Late", "Today", "Tomorrow", "This week", "Later"].filter(g => groups[g]).map(g => `<section class="group ${g.toLowerCase().replace(" ", "")}"><h3>${g}</h3><div class="cards">
-      ${groups[g].map(it => it.rhythm
-        ? `<div class="card"><span class="ctext">↻ ${h(it.rhythm.rhythm.text)}</span><span class="tnm">${h(it.rhythm.name)}</span><span class="foot"><span class="when">${fmtDay(it.ts)}</span></span></div>`
-        : `<div class="card${isLate(it.e) ? " late" : ""}"><span class="ctext">${it.tid ? "○ " : ""}${h(it.e.text)}</span>${it.tid ? `<span class="tnm">${h(byId(it.tid).name)}</span>` : `<span class="dog">▱ Note</span>`}<span class="foot"><span class="when">${fmtDay(it.ts)}</span></span></div>`).join("")}
-    </div></section>`).join("")}
-    <section class="group"><h3>No date</h3><div class="cards">${nodate.map(x => `<div class="card"><span class="ctext">${h(x.name)}</span></div>`).join("")}</div></section>
-    <section class="group"><h3>Notes filter · ${looseNotes.length}</h3><div class="cards">${looseNotes.map(e => `<div class="card"><span class="ctext">${h(e.text)}</span><span class="dog">▱ Note · ${md(e.at)}</span></div>`).join("")}</div></section>
-  </div>
-  <div class="pane">
-    <div class="tpick">${S.threads.map(x => `<button class="${x.id === curThread ? "on" : ""}" data-cthread="${x.id}">${h(x.name)}</button>`).join("")}</div>
-    <h2>${h(t.name)}</h2>
-    <h4>Tasks</h4>${b.tasks.length ? `<ul>${b.tasks.map(e => `<li>${h(e.text)} <small>${fmtDay(e.ask)}</small></li>`).join("")}</ul>` : `<p class="sub" style="color:var(--ink-3)">No tasks.</p>`}
-    ${t.rhythm ? `<ul><li>↻ ${h(t.rhythm.text)} <small>every ${WD[t.rhythm.weekday]}</small></li></ul>` : ""}
-    <h4>Notes</h4>${b.notes.length ? `<ul>${[...b.notes].sort((x, y) => y.at - x.at).map(e => `<li>${h(e.text)} <small>${md(e.at)}</small></li>`).join("")}</ul>` : `<p style="color:var(--ink-3)">No notes.</p>`}
-    <h4>Activity</h4><ul>${b.activity.map(e => `<li>Completed "${h(e.text)}" <small>${md(e.doneAt)}</small></li>`).join("")}${t.resolvedAt ? `<li>Resolved <small>${md(t.resolvedAt)}</small></li>` : ""}<li>Started <small>${md(Math.min(...[...b.notes, ...b.tasks, ...b.activity].map(e => e.at), T0))}</small></li></ul>
-    ${missing.length ? `<div class="missing"><h4>Not visible from this thread today</h4><ul>${missing.map(x => `<li>${h(x.e.text)} <small>lives in ${h(x.where)}</small></li>`).join("")}</ul></div>` : ""}
-  </div></div>`;
+function headHtml(t, opts = {}) {
+  const n = live(entriesOf(t.id)).length, col = isCollapsed(t);
+  return `<div class="ih" data-open="${t.id}"${opts.drag ? ` draggable="true" data-dragthread="${t.id}"` : ""}>${nameHtml(t)}<span class="ct">${n}</span>
+    <button data-act="collapse" data-id="${t.id}" title="${col ? "Unfold" : "Fold"}">${col ? "▸" : "▾"}</button>
+    <button data-act="${t.resolvedAt ? "reopen" : "resolve"}" data-id="${t.id}" title="${t.resolvedAt ? "Reopen" : "Resolve"}">${t.resolvedAt ? "↺" : "✓"}</button></div>`;
+}
+function groupBody(t, limit) {
+  const es = threadEntries(t);
+  if (isCollapsed(t)) return `<div class="collapsed-line">${es[0] ? h(es[0].text) : "Empty"}</div>`;
+  const shown = S.expanded[t.id] || !limit ? es : es.slice(0, limit);
+  const sug = live(entriesOf(t.id, true));
+  return `<div class="stack">${shown.map(e => wcard(e, t.id)).join("")}</div>
+    ${!es.length ? `<div class="collapsed-line" style="color:var(--ink-3)">Drop cards here</div>` : ""}
+    ${limit && es.length > limit ? `<button class="more" data-act="expand" data-id="${t.id}">${S.expanded[t.id] ? "Show fewer" : `Show all ${es.length}`}</button>` : ""}
+    ${sug.length ? `<div class="sughere">Might belong here${sug.map(e => `<div><span>${h(e.text)}</span><button class="btn small" data-accept="${e.id}|${t.id}">Add</button></div>`).join("")}</div>` : ""}`;
+}
+function looseTray() {
+  const loose = looseEntries();
+  return `<section class="loose-tray" data-drop="loose"><div class="tray-h"><span>Loose · ${loose.length}</span><span>Drop a card on another card to start a group</span></div>
+    <div class="loose-cards">${loose.map(e => wcard(e, null)).join("") || `<span style="color:var(--ink-3)">Nothing loose.</span>`}</div></section>`;
+}
+function wbar() {
+  const away = S.entries.filter(isAway);
+  return `<div class="wbar"><div class="dropzone" data-drop="new">+ New group<small>drop a card here</small></div><div class="dropzone" data-drop="away">Put away<small>drop a card here</small></div>
+    ${away.length ? `<button class="btn small ghost" data-act="toggleAway">${showAway ? "Hide" : "Show"} put away · ${away.length}</button>` : ""}
+    <span class="wtip">Drag to move · hold ⌥ while dropping to also keep it where it was</span></div>
+    ${showAway && away.length ? `<div class="away-list">${away.map(e => `<div><span>${h(e.text)}</span><button class="btn small" data-act="bringBack" data-id="${e.id}">Bring back</button></div>`).join("")}</div>` : ""}`;
+}
+function renderIslands(m) {
+  const ts = orderedThreads();
+  const island = t => `<section class="island${t.resolvedAt ? " resolved" : ""}" data-drop="${t.id}" data-island="${t.id}" style="--h:${t.hue}">${headHtml(t, { drag: true })}${groupBody(t, 5)}</section>`;
+  m.innerHTML = `<p class="hint"><b>Islands.</b> Each thread is a group the app lays out for you. You decide what goes in a group, the order of the groups (drag a header), and what gets folded or put away; positions are never yours to keep tidy. A card on two threads shows in both: hover one to see its twin.</p>
+    ${wbar()}${looseTray()}<div class="islands" id="islands">${ts.filter(t => !t.resolvedAt).map(island).join("")}${ts.filter(t => t.resolvedAt).map(island).join("")}</div>`;
+  masonry();
+}
+function masonry() {
+  const box = $("islands"); if (!box) return;
+  const els = [...box.querySelectorAll(".island")];
+  els.forEach(el => el.style.gridRowEnd = "auto");
+  const hs = els.map(el => el.getBoundingClientRect().height);
+  els.forEach((el, i) => el.style.gridRowEnd = "span " + Math.ceil((hs[i] + 14) / 4));
+}
+function renderColumns(m) {
+  const ts = orderedThreads(), loose = looseEntries();
+  const col = t => `<section class="col${t.resolvedAt ? " resolved" : ""}" data-drop="${t.id}" data-island="${t.id}" style="--h:${t.hue}">${headHtml(t, { drag: true })}${groupBody(t, 0)}</section>`;
+  m.innerHTML = `<p class="hint"><b>Columns.</b> A board with one column per thread, Loose first; the same moves as islands, in a strict row. The one I would not pick: it reads as a kanban, scrolls sideways past four or five threads, and a column says nothing about status.</p>${wbar()}
+    <div class="cols"><section class="col loosecol" data-drop="loose"><div class="ih"><span class="nm" style="color:var(--ink-2)">Loose</span><span class="ct">${loose.length}</span></div><div class="stack">${loose.map(e => wcard(e, null)).join("")}</div></section>
+    ${ts.map(col).join("")}<section class="col newcol" data-drop="new">+ New group<br><small>drop a card here</small></section></div>`;
+}
+function renderDesk(m) {
+  const loose = looseEntries();
+  const cur = sel && !isT(sel) && loose.find(e => e.id === sel);
+  const sug = cur ? sugFor(cur) : new Set();
+  const ts = orderedThreads().filter(t => !t.resolvedAt);
+  m.innerHTML = `<p class="hint"><b>Desk.</b> Sorting, not viewing. Loose entries sit on the desk and threads are trays. Pick a card and the trays it probably belongs to light up; click a tray, or press <b>1–9</b>, <b>N</b> for a new group, <b>X</b> to put it away. The risk: a clear desk starts to feel like a goal, which is the Inbox Vita OS dropped.</p>${wbar()}
+  <div class="desk"><section class="deskpile" data-drop="loose"><div class="tray-h"><span>On the desk · ${loose.length}</span><span>${cur ? "Now choose a tray" : "Pick a card"}</span></div>
+    ${loose.length ? `<div class="loose-cards">${loose.map(e => wcard(e, null)).join("")}</div>` : `<div class="desk-empty">Desk is clear.</div>`}</section>
+  <section><div class="tray-h"><span>Trays</span><span>${ts.length} threads</span></div><div class="trays">
+    ${ts.map((t, i) => { const es = threadEntries(t); return `<div class="tray${sug.has(t.id) ? " sugtarget" : ""}" data-drop="${t.id}" data-assign="${t.id}" style="--h:${t.hue}"><div class="ih">${i < 9 ? `<span class="key">${i + 1}</span>` : ""}${nameHtml(t)}<span class="ct">${es.length}</span></div>${es.slice(0, 2).map(e => `<div class="last">${h(e.text)}</div>`).join("")}</div>`; }).join("")}
+    <div class="tray plain" data-drop="new" data-assign="new"><div class="ih"><span class="key">N</span><span class="nm" style="color:var(--ink-2)">New group</span></div></div>
+    <div class="tray plain" data-drop="away" data-assign="away"><div class="ih"><span class="key">X</span><span class="nm" style="color:var(--ink-2)">Put away</span></div></div>
+  </div></section></div>`;
+}
+// One rule for every drop: a move, or with ⌥ an "also". Returns what to tell the user.
+function dropEntry(eid, from, target, alt) {
+  const e = byId(eid); if (!e || target === eid) return;
+  const fromT = from && isT(from) ? from : null;
+  if (target === "away") { e.awayAt = T0; return "Put away. It's under “Show put away”."; }
+  if (target === "loose") { if (!fromT) return; unlink(eid, fromT); return threadsOf(eid).length ? `Taken off ${tname(byId(fromT))}` : "Loose again"; }
+  if (target === "new" || !isT(target)) {
+    const t = newThread(""); S.order.unshift(t.id);
+    if (fromT && !alt) unlink(eid, fromT);
+    link(eid, t.id);
+    if (target !== "new") link(target, t.id);
+    editing = t.id;
+    return "New group. Give it a name.";
+  }
+  if (target === fromT) return;
+  if (fromT && !alt) unlink(eid, fromT);
+  link(eid, target);
+  return alt && fromT ? `Also on ${tname(byId(target))}` : `On ${tname(byId(target))}`;
+}
+function deskAssign(target) {
+  const loose = looseEntries(), i = loose.findIndex(e => e.id === sel);
+  if (i < 0) return false;
+  const next = loose[i + 1] || loose[i - 1];
+  const msg = dropEntry(sel, null, target, false);
+  sel = next ? next.id : null;
+  if (msg) toast(msg);
+  render();
+  return true;
+}
+function dropTarget(el) {
+  if (!el.closest) return null;
+  if (drag.kind === "thread") return el.closest("[data-island]");
+  const t = el.closest("[data-drop]");
+  if (t && t.dataset.drop === drag.id) return t.parentElement.closest("[data-drop]");
+  return t;
 }
 
 // ---------- Panel ----------
 function renderPanel() {
   const p = $("panel");
-  if (!sel || !byId(sel) || variant === "current") { p.hidden = true; document.body.classList.remove("panel-open"); return; }
+  if (!sel || !byId(sel)) { p.hidden = true; document.body.classList.remove("panel-open"); return; }
   p.hidden = false;
   if (innerWidth > 760) { p.style.top = $("top").offsetHeight + "px"; p.style.bottom = $("switcher").offsetHeight + "px"; }
   else { p.style.top = ""; p.style.bottom = $("switcher").offsetHeight + "px"; }
@@ -916,6 +1025,7 @@ function renderPanel() {
       <input type="text" data-act="tname" value="${h(t.name)}">
       <div class="row">${t.resolvedAt ? `Resolved ${md(t.resolvedAt)} <button class="btn small" data-act="reopen">Reopen</button>` : `Open <button class="btn small" data-act="resolve">Resolve</button>`}
       ${t.rhythm ? ` · ↻ ${h(t.rhythm.text)}, every ${WD[t.rhythm.weekday]}` : ""}</div>
+      <div class="row">The same thing as another thread? <select data-act="merge"><option value="">Merge into…</option>${S.threads.filter(x => x.id !== t.id).map(x => `<option value="${x.id}">${h(tname(x))}</option>`).join("")}</select></div>
       ${storyHtml(sel)}`;
     return;
   }
@@ -923,7 +1033,7 @@ function renderPanel() {
   const acc = threadsOf(e.id), sgT = threadsOf(e.id, true), accE = entryNbrs(e.id), sgE = entryNbrs(e.id, true);
   const loose = !acc.length;
   const cluster = loose ? looseCluster(e.id) : [];
-  p.innerHTML = `<div class="ph">Entry · ${md(e.at)}<button class="x" data-act="close" aria-label="Close">×</button></div>
+  p.innerHTML = `<div class="ph">Entry · ${md(e.at)}${isAway(e) ? " · put away" : ""}<button class="x" data-act="close" aria-label="Close">×</button></div>
     <textarea data-act="text">${h(e.text)}</textarea>
     <div class="row">${isOpenAsk(e)
       ? `Comes back <input type="date" data-act="ask" value="${toInput(e.ask)}"> <button class="btn small" data-act="handle">Handled</button> <button class="btn small ghost" data-act="clearAsk">No date</button>`
@@ -934,7 +1044,7 @@ function renderPanel() {
     </div></div>` : ""}
     <div class="sec"><b>On threads</b>
       ${acc.map(t => `<div class="conn"><span class="t">${chip(t)}</span><button class="unl" data-unlink="${e.id}|${t}" title="Take off this thread">×</button></div>`).join("") || `<p style="margin:0 0 6px;color:var(--ink-3)">Loose. That's fine.</p>`}
-      <select data-act="addThread"><option value="">+ Put on a thread…</option>${S.threads.filter(t => !acc.includes(t.id)).map(t => `<option value="${t.id}">${h(t.name)}</option>`).join("")}<option value="__new">New thread…</option></select>
+      <select data-act="addThread"><option value="">+ Put on a thread…</option>${S.threads.filter(t => !acc.includes(t.id)).map(t => `<option value="${t.id}">${h(tname(t))}</option>`).join("")}<option value="__new">New thread…</option></select>
     </div>
     <div class="sec"><b>Connected entries</b>
       ${accE.map(id => `<div class="conn"><span class="t" data-open="${id}" style="cursor:pointer">${h(trunc(nameOf(id), 50))}</span><button class="unl" data-unlink="${e.id}|${id}" title="Disconnect">×</button></div>`).join("") || `<p style="margin:0 0 6px;color:var(--ink-3)">None.</p>`}
@@ -942,12 +1052,12 @@ function renderPanel() {
     </div>
     ${loose ? `<div class="sec"><button class="btn primary" data-act="startThread">Start a thread${cluster.length > 1 ? ` with these ${cluster.length}` : ""}</button>
       <p style="color:var(--ink-3);font-size:12px;margin:6px 0 0">${cluster.length > 1 ? "Takes this entry and the loose entries connected to it. Nothing is converted; they just go on the new line." : "Names a new line with this entry on it. Connect related loose entries first to bring them along."}</p></div>` : ""}
-    <div class="sec"><button class="btn small danger" data-act="delete">Delete entry</button></div>`;
+    <div class="sec" style="display:flex;gap:8px">${isAway(e) ? `<button class="btn small" data-act="bringBack" data-id="${e.id}">Bring back</button>` : `<button class="btn small" data-act="putAway">Put away</button>`}<button class="btn small danger" data-act="delete">Delete entry</button></div>`;
 }
 
 // ---------- switcher, tip, toast ----------
 function renderSwitcher() {
-  $("switcher").innerHTML = `<span class="lab">Variant</span>${VK.map((k, i) => `<button data-variant="${k}" aria-pressed="${variant === k}">${i + 1} ${k}<small>${VARIANTS[k]}</small></button>`).join("")}<span class="sp"></span><button data-act="reset" title="Restore the scenario">Reset</button>`;
+  $("switcher").innerHTML = `<span class="lab">Workspace</span>${VK.map(k => `<button data-variant="${k}" aria-pressed="${tab === "work" && variant === k}">${k}<small>${VARIANTS[k]}</small></button>`).join("")}<span class="sp"></span><button data-act="reset" title="Restore the scenario">Reset</button>`;
 }
 function showTip(text, ev) {
   const t = $("tip");
@@ -959,13 +1069,54 @@ function showTip(text, ev) {
   t.style.left = x + "px"; t.style.top = y + "px";
 }
 let toastT;
-function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 1800); }
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2200); }
 
 // ---------- events ----------
 document.addEventListener("mousemove", ev => {
   if (ev.target.closest && ev.target.closest("#cv")) return;
   const el = ev.target.closest && ev.target.closest("[data-tip]");
   showTip(el ? el.getAttribute("data-tip") : null, ev);
+});
+document.addEventListener("mouseover", ev => {
+  document.querySelectorAll(".wc.twin").forEach(x => x.classList.remove("twin"));
+  const c = ev.target.closest && ev.target.closest(".wc[data-eid]"); if (!c || drag) return;
+  const all = document.querySelectorAll(`.wc[data-eid="${c.dataset.eid}"]`);
+  if (all.length > 1) all.forEach(x => x !== c && x.classList.add("twin"));
+});
+document.addEventListener("dragstart", ev => {
+  const c = ev.target.closest && ev.target.closest("[data-drag],[data-dragthread]"); if (!c) return;
+  if (c.dataset.drag) {
+    drag = { kind: "entry", id: c.dataset.drag, from: c.dataset.from };
+    c.classList.add("dragsrc");
+    sugFor(byId(drag.id)).forEach(t => document.querySelectorAll(`[data-drop="${t}"]`).forEach(x => x.classList.add("sugtarget")));
+  } else drag = { kind: "thread", id: c.dataset.dragthread };
+  ev.dataTransfer.effectAllowed = "copyMove";
+  try { ev.dataTransfer.setData("text/plain", drag.id); } catch (e) {}
+});
+document.addEventListener("dragover", ev => {
+  if (!drag) return;
+  const t = dropTarget(ev.target);
+  document.querySelectorAll(".over").forEach(x => x !== t && x.classList.remove("over"));
+  if (!t) return;
+  ev.preventDefault();
+  ev.dataTransfer.dropEffect = ev.altKey ? "copy" : "move";
+  t.classList.add("over");
+});
+document.addEventListener("drop", ev => {
+  if (!drag) return;
+  const t = dropTarget(ev.target); if (!t) return;
+  ev.preventDefault();
+  if (drag.kind === "thread") {
+    const target = t.dataset.island;
+    if (target !== drag.id) { S.order = S.order.filter(x => x !== drag.id); S.order.splice(S.order.indexOf(target), 0, drag.id); }
+  } else { const msg = dropEntry(drag.id, drag.from, t.dataset.drop, ev.altKey); if (msg) toast(msg); }
+  drag = null; render();
+});
+document.addEventListener("dragend", () => { drag = null; document.querySelectorAll(".over,.sugtarget,.dragsrc").forEach(x => x.classList.remove("over", "sugtarget", "dragsrc")); });
+document.addEventListener("focusout", ev => {
+  const el = ev.target; if (!el.dataset || !el.dataset.rename) return;
+  const t = byId(el.dataset.rename); if (t) t.name = el.value.trim() || "Untitled group";
+  editing = null; render();
 });
 document.addEventListener("submit", ev => {
   if (ev.target.id !== "capture") return;
@@ -978,43 +1129,53 @@ document.addEventListener("submit", ev => {
   render();
 });
 document.addEventListener("click", ev => {
-  const el = ev.target.closest("[data-act],[data-done],[data-accept],[data-dismiss],[data-unlink],[data-variant],[data-tab],[data-cthread],[data-focus],[data-open]");
+  if (ev.target.closest("[data-rename]")) return;
+  const el = ev.target.closest("[data-act],[data-done],[data-accept],[data-dismiss],[data-unlink],[data-variant],[data-tab],[data-assign],[data-open]");
   if (!el || el.closest("#cv")) return;
   const d = el.dataset;
-  if (d.variant) { variant = d.variant; sel = null; laneScroll = null; setUrl(); return render(); }
+  if (d.variant) { variant = d.variant; tab = "work"; sel = null; setUrl(); return render(); }
   if (d.tab) { tab = d.tab; setUrl(); return render(); }
-  if (d.cthread) { curThread = d.cthread; return renderMain(); }
-  if (d.focus) { focusId = d.focus; sel = d.focus; return render(); }
   if (d.done) { const e = byId(d.done); e.doneAt = T0; toast("Handled. It stays on its threads as a record."); return render(); }
   if (d.accept) { const [a, b] = d.accept.split("|"); link(a, b); return render(); }
   if (d.dismiss) { const [a, b] = d.dismiss.split("|"); unlink(a, b); return render(); }
   if (d.unlink) { const [a, b] = d.unlink.split("|"); unlink(a, b); return render(); }
+  if (d.assign) {
+    if (sel && !isT(sel) && deskAssign(d.assign)) return;
+    if (isT(d.assign)) { sel = d.assign; return render(); }
+    return toast("Pick a card on the desk first");
+  }
   if (d.act) {
-    const e = sel && byId(sel);
+    const e = sel && byId(sel), target = d.id ? byId(d.id) : e;
     switch (d.act) {
       case "close": sel = null; return render();
-      case "reset": if (confirm("Restore the original scenario? Your changes in the prototype are lost.")) { S = seed(); sel = null; view.fitted = false; laneScroll = null; render(); } return;
+      case "reset": if (confirm("Restore the original scenario? Your changes in the prototype are lost.")) { S = seed(); sel = null; editing = null; view.fitted = false; laneScroll = null; render(); } return;
       case "arrange": Object.values(S.pos).forEach(p => p.pinned = false); runSim(220, true); return;
       case "fit": fitView($("cv")); drawCanvas(); return;
       case "handle": e.doneAt = T0; return render();
       case "unhandle": e.doneAt = null; return render();
       case "clearAsk": e.ask = null; e.doneAt = null; return render();
-      case "resolve": e.resolvedAt = T0; return render();
-      case "reopen": delete e.resolvedAt; return render();
+      case "resolve": target.resolvedAt = T0; return render();
+      case "reopen": delete target.resolvedAt; return render();
+      case "rename": editing = d.id; return render();
+      case "collapse": S.collapsed[d.id] = !isCollapsed(target); return render();
+      case "expand": S.expanded[d.id] = !S.expanded[d.id]; return render();
+      case "toggleAway": showAway = !showAway; return render();
+      case "putAway": e.awayAt = T0; sel = null; toast("Put away. It's under “Show put away”."); return render();
+      case "bringBack": delete target.awayAt; return render();
       case "delete": if (confirm("Delete this entry?")) { S.entries = S.entries.filter(x => x.id !== sel); S.links = S.links.filter(l => l.a !== sel && l.b !== sel); delete S.pos[sel]; sel = null; render(); } return;
       case "startThread": {
         const ids = looseCluster(sel);
         const name = prompt("Name the thread", ""); if (!name || !name.trim()) return;
-        const t = newThread(name.trim());
+        const t = newThread(name.trim()); S.order.unshift(t.id);
         ids.forEach(id => link(id, t.id));
         if (S.pos[sel]) S.pos[t.id] = { x: S.pos[sel].x, y: S.pos[sel].y - 90 };
-        sel = t.id; focusId = t.id; toast(`"${t.name}" started with ${ids.length} entr${ids.length > 1 ? "ies" : "y"}`);
+        sel = t.id; toast(`"${t.name}" started with ${ids.length} entr${ids.length > 1 ? "ies" : "y"}`);
         return render();
       }
     }
     return;
   }
-  if (d.open) { sel = d.open; if (variant === "focus") focusId = d.open; return render(); }
+  if (d.open) { sel = d.open; return render(); }
 });
 document.addEventListener("change", ev => {
   const el = ev.target, act = el.dataset && el.dataset.act; if (!act || !sel) return;
@@ -1022,10 +1183,18 @@ document.addEventListener("change", ev => {
   if (act === "ask") { e.ask = fromInput(el.value); e.doneAt = null; return render(); }
   if (act === "addThread" && el.value) {
     let tid = el.value;
-    if (tid === "__new") { const name = prompt("Name the thread"); if (!name || !name.trim()) return render(); tid = newThread(name.trim()).id; }
+    if (tid === "__new") { const name = prompt("Name the thread"); if (!name || !name.trim()) return render(); const t = newThread(name.trim()); S.order.unshift(t.id); tid = t.id; }
     link(sel, tid); return render();
   }
   if (act === "addLink" && el.value) { link(sel, el.value); return render(); }
+  if (act === "merge" && el.value) {
+    const from = sel, into = el.value, n = entriesOf(from).length;
+    entriesOf(from).forEach(x => link(x.id, into));
+    S.links = S.links.filter(l => l.a !== from && l.b !== from);
+    S.threads = S.threads.filter(t => t.id !== from); S.order = S.order.filter(id => id !== from); delete S.pos[from];
+    sel = into; toast(`Merged ${n} entr${n === 1 ? "y" : "ies"} into ${tname(byId(into))}`);
+    return render();
+  }
 });
 document.addEventListener("input", ev => {
   const el = ev.target, act = el.dataset && el.dataset.act; if (!sel) return;
@@ -1033,14 +1202,24 @@ document.addEventListener("input", ev => {
   if (act === "tname") { byId(sel).name = el.value; renderMain(); save(); }
 });
 document.addEventListener("keydown", ev => {
-  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
-  if (ev.key === "Escape") { if (typing) document.activeElement.blur(); sel = null; return render(); }
+  const a = document.activeElement, typing = /INPUT|TEXTAREA|SELECT/.test(a.tagName);
+  if (a.dataset && a.dataset.rename && ev.key === "Enter") { a.blur(); return; }
+  if (ev.key === "Escape") { if (typing) a.blur(); sel = null; return render(); }
   if (typing) return;
-  if (ev.key === "[" || ev.key === "]") { const i = VK.indexOf(variant); variant = VK[(i + (ev.key === "]" ? 1 : VK.length - 1)) % VK.length]; sel = null; laneScroll = null; setUrl(); render(); }
-  if (/^[1-4]$/.test(ev.key)) { variant = VK[+ev.key - 1]; sel = null; laneScroll = null; setUrl(); render(); }
-  if (ev.key === "Enter" && document.activeElement.dataset && document.activeElement.dataset.open) document.activeElement.click();
+  if (ev.key === "[" || ev.key === "]") { const i = VK.indexOf(variant); variant = VK[(i + (ev.key === "]" ? 1 : VK.length - 1)) % VK.length]; tab = "work"; sel = null; setUrl(); return render(); }
+  if (tab === "work" && variant === "desk" && sel && !isT(sel)) {
+    const ts = orderedThreads().filter(t => !t.resolvedAt);
+    if (/^[1-9]$/.test(ev.key) && ts[+ev.key - 1]) return deskAssign(ts[+ev.key - 1].id);
+    if (ev.key === "n" || ev.key === "N") return deskAssign("new");
+    if (ev.key === "x" || ev.key === "X") return deskAssign("away");
+  }
+  if (ev.key === "Enter" && a.dataset && a.dataset.open) a.click();
 });
-addEventListener("resize", () => { if (variant === "canvas" && tab === "map") { fitView($("cv")); drawCanvas(); } });
+addEventListener("resize", () => {
+  if (tab !== "work") return;
+  if (variant === "canvas") { fitView($("cv")); drawCanvas(); }
+  if (variant === "islands") masonry();
+});
 
 render();
 </script>
