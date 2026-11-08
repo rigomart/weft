@@ -11,6 +11,8 @@ Weft keeps one person's life as Entries on Threads, on their own device. It is a
 - `bun run test`: `bun test` in each workspace, then the tests in `tooling/`.
 - One workspace: `bunx turbo run <task> --filter=@weft/<name>`.
 
+A user-visible change is proven in the real desktop app per `.claude/skills/verify-weft/SKILL.md`, and a change to a feature's behaviour updates its feature file there; lint and unit tests do not substitute for it.
+
 ## Where things live
 
 The split is ADR 0008:
