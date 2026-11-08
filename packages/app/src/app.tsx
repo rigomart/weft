@@ -5,7 +5,7 @@ import {
   TabsTrigger,
 } from "./components/ui/tabs.tsx";
 
-/** The three views, by their working names in GLOSSARY.md. Each is empty until its own slice. */
+/** The three views, by their working names in GLOSSARY.md. */
 export const views = [
   { value: "now", label: "Now" },
   { value: "workspace", label: "Workspace" },

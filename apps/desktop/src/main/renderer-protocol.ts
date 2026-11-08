@@ -12,7 +12,7 @@ const SCHEME = "app";
 const HOST = "weft";
 export const RENDERER_URL = `${SCHEME}://${HOST}/`;
 
-/** Only the app's own files. Inline styles stay, for the style attributes React and Base UI set. */
+/** Inline styles stay for the style attributes React and Base UI set. */
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self'",

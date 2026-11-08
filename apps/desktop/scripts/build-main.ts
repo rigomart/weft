@@ -1,4 +1,3 @@
-// Builds the main process into dist/main.
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
 

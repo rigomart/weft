@@ -1,5 +1,4 @@
-// Builds the main process, serves the renderer from Vite with hot reload, and runs Electron on it.
-// Main process changes need a restart. WEFT_USER_DATA and WEFT_DEBUG_PORT pass through to Electron.
+// Main process changes need a restart.
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { createServer } from "vite";

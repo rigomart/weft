@@ -10,11 +10,6 @@ import {
   serveRenderer,
 } from "./renderer-protocol.ts";
 
-/*
- * The desktop host: one window on the interface, and the SQLite file in the user-data folder, opened
- * here in the main process (ADR 0005).
- */
-
 let database: Database | undefined;
 let window: BrowserWindow | null = null;
 
@@ -39,7 +34,7 @@ function setUp(launch: Launch) {
   for (const name of launch.ignored) {
     console.warn(`Weft ignores ${name} in a packaged build.`);
   }
-  // Before anything else reads it: the single-instance lock and Chromium's files live here too.
+  // Set before Electron reads it for the single-instance lock and Chromium's own files.
   mkdirSync(launch.userData, { recursive: true });
   app.setPath("userData", launch.userData);
 
@@ -56,7 +51,7 @@ function setUp(launch: Launch) {
 
   registerRendererScheme();
 
-  // The lock is per user-data folder: one Weft per data folder, and other folders run alongside.
+  // Electron keys the single-instance lock to the user-data folder.
   if (!app.requestSingleInstanceLock()) {
     console.info(
       `Weft is already open on ${launch.userData}; showing its window.`,
@@ -67,7 +62,6 @@ function setUp(launch: Launch) {
   app.on("second-instance", showWindow);
   app.on("window-all-closed", () => app.quit());
   app.on("will-quit", () => database?.client.close());
-  // A window that never loads stays hidden while holding the lock, so any failure here quits.
   app
     .whenReady()
     .then(() => start(launch))

@@ -1,5 +1,4 @@
-// Builds the app and packages it as an ad-hoc signed macOS app for this Mac's architecture, in
-// out/Weft-darwin-<arch>/Weft.app. Not the release build: no disk image, notarisation or icon (#24).
+// Not the release build: no disk image, notarisation or icon (#24).
 import { FuseV1Options, FuseVersion, flipFuses } from "@electron/fuses";
 import { packager } from "@electron/packager";
 import { existsSync, realpathSync } from "node:fs";
@@ -78,8 +77,6 @@ const [appDir] = await packager({
 if (!appDir) throw new Error("The packager produced no app.");
 const appBundle = join(appDir, `${productName}.app`);
 
-// Nothing but the app's own, unaltered archive runs in its binary: no Node from ELECTRON_RUN_AS_NODE
-// or NODE_OPTIONS, no --inspect, and no code outside app.asar.
 await flipFuses(appBundle, {
   version: FuseVersion.V1,
   [FuseV1Options.RunAsNode]: false,
@@ -90,7 +87,7 @@ await flipFuses(appBundle, {
   [FuseV1Options.GrantFileProtocolExtraPrivileges]: false,
 });
 
-// Ad-hoc signed as one bundle, which Apple silicon needs to run it at all. Not notarised.
+// Flipping the fuses breaks Electron's signature, and Apple silicon runs only signed code.
 await run(["codesign", "--force", "--deep", "--sign", "-", appBundle]);
 await run(["codesign", "--verify", "--deep", "--strict", appBundle]);
 await rm(stage, { recursive: true });
@@ -98,9 +95,8 @@ await rm(stage, { recursive: true });
 console.info(`Packaged ${appBundle}`);
 
 /**
- * Copies `from` and everything it depends on into a flat `node_modules`, following bun's symlinks.
  * Optional dependencies that aren't installed (other platforms' libsql bindings) are skipped. Two
- * versions of one package would need nesting, so that fails instead.
+ * versions of one package fail, since they would need nesting.
  */
 async function copyRuntimeDependencies(from: string, nodeModules: string) {
   const copied = new Map<string, string>();
@@ -131,7 +127,6 @@ async function copyRuntimeDependencies(from: string, nodeModules: string) {
   }
 }
 
-/** Where `name` resolves from `dir`, as Node looks it up: each ancestor's node_modules. */
 function packageDir(dir: string, name: string): string | undefined {
   for (let at = realpathSync(dir); ; at = dirname(at)) {
     if (basename(at) !== "node_modules") {
