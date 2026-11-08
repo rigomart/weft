@@ -23,7 +23,7 @@ Drive only an instance you started with `verify up`. Never drive or open the own
 
 ## Users and test data
 
-Weft has no sign-in, so there are no users to create. A new instance starts from an empty data folder: the window shows the Now, Workspace and History tabs with Now selected, and `weft.db` is an empty file with no tables until the event log lands. Assume no other state. Create anything a check needs in the window, with actions a user can take. `down` without `--purge` keeps the data folder, and `down --purge` empties it.
+Weft has no sign-in, so there are no users to create. A new instance starts from an empty data folder: the window shows the Now, Workspace and History tabs with Now selected and an empty capture box with no Entries under it, and `weft.db` holds the event log's tables with no events in them. Assume no other state. Create anything a check needs in the window, with actions a user can take. `down` without `--purge` keeps the data folder, and `down --purge` empties it.
 
 ## Prove a change
 
@@ -66,8 +66,8 @@ agent-browser eval "JSON.stringify({selected: document.querySelector('[role=tab]
 #   {"selected":"History","panels":["History"]}
 agent-browser wait --fn "document.getAnimations().length === 0"
 agent-browser screenshot "$EVIDENCE/open-the-app-history.png"
-bun run --silent verify db "PRAGMA schema_version" --instance gen
-#   {"ok":true,"database":"…/.verify/instances/gen/data/weft.db","file":{"inode":…,"createdAt":"…","bytes":0},"rows":[{"schema_version":0}]}
+bun run --silent verify db "SELECT count(*) AS events FROM events" --instance gen
+#   {"ok":true,"database":"…/.verify/instances/gen/data/weft.db","file":{"inode":…,"createdAt":"…","bytes":…},"rows":[{"events":0}]}
 bun run --silent verify down --purge --instance gen
 ```
 
