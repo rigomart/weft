@@ -1,0 +1,10 @@
+{
+  "id": "01a1bcf2-7a8b-7acb-a790-4e21828ab308",
+  "deviceId": "01a1bcf2-3ff3-740f-8223-3d66fb985184",
+  "hlc": "2026-11-08T20:56:10.123Z-0000",
+  "type": "entry deleted",
+  "version": 1,
+  "content": {
+    "entryId": "01a1bcf2-3ff3-71bd-8809-7cc9d8a4c9c0"
+  }
+}

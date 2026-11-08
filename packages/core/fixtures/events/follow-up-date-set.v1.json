@@ -1,0 +1,18 @@
+{
+  "id": "01a1bcf2-5b4b-78cf-b3bd-4733a0ab26fa",
+  "deviceId": "01a1bcf2-3ff3-740f-8223-3d66fb985184",
+  "hlc": "2026-11-08T20:56:02.123Z-0000",
+  "type": "follow-up date set",
+  "version": 1,
+  "content": {
+    "entryId": "01a1bcf2-3ff3-7f1c-a386-39ecaf300a29",
+    "followUpDate": {
+      "day": "2026-11-15",
+      "time": "09:30",
+      "repeat": {
+        "kind": "weekly",
+        "weekdays": [0, 3]
+      }
+    }
+  }
+}

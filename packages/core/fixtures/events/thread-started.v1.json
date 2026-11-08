@@ -1,0 +1,11 @@
+{
+  "id": "01a1bcf2-4f93-7785-9eb7-13c30f6ae33b",
+  "deviceId": "01a1bcf2-3ff3-740f-8223-3d66fb985184",
+  "hlc": "2026-11-08T20:55:59.123Z-0000",
+  "type": "thread started",
+  "version": 1,
+  "content": {
+    "threadId": "01a1bcf2-3ff3-7f1f-919c-84ff8ec7c804",
+    "name": "Back"
+  }
+}

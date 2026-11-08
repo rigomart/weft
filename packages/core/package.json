@@ -7,10 +7,11 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json",
-    "test": "bun test --pass-with-no-tests"
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",
+    "test": "bun test"
   },
   "devDependencies": {
+    "@types/bun": "1.3.14",
     "typescript": "catalog:"
   }
 }

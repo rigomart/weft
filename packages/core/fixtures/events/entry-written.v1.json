@@ -1,0 +1,13 @@
+{
+  "id": "01a1bcf2-43db-757d-8124-2503d14ac0d5",
+  "deviceId": "01a1bcf2-3ff3-740f-8223-3d66fb985184",
+  "hlc": "2026-11-08T20:55:56.123Z-0000",
+  "type": "entry written",
+  "version": 1,
+  "content": {
+    "entryId": "01a1bcf2-3ff3-7f1c-a386-39ecaf300a29",
+    "body": "Back stiff after the drive",
+    "writtenAt": "2026-11-08T20:55:55.123Z",
+    "parentEntryId": null
+  }
+}
