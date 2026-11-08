@@ -1,7 +1,13 @@
 import { expect, test } from "bun:test";
 import { calendarDay, timeOfDay, type FollowUpDate } from "@weft/contracts";
 
-import { daysFrom, followUpLabel, localDay } from "./follow-up-date.ts";
+import {
+  daysFrom,
+  followUpLabel,
+  localDay,
+  repeatLabel,
+  weekdayOf,
+} from "./follow-up-date.ts";
 
 const today = calendarDay("2026-11-08");
 
@@ -40,4 +46,27 @@ test("says the day from today, with its time when it has one", () => {
   expect(label("2026-11-15")).toBe("Nov 15");
   expect(label("2026-11-06")).toBe("Nov 6");
   expect(label("2027-01-04", "00:00")).toBe("Jan 4, 2027, 0:00");
+});
+
+test("says a Repeat's rhythm", () => {
+  const label = (repeat: Parameters<typeof repeatLabel>[0]) =>
+    repeatLabel(repeat, "en-US");
+  expect(label({ kind: "weekly", weekdays: [0] })).toBe("every Sunday");
+  expect(label({ kind: "weekly", weekdays: [1, 3, 5] })).toBe(
+    "every Mon, Wed, Fri",
+  );
+  expect(label({ kind: "weekly", weekdays: [0, 1, 2, 3, 4, 5, 6] })).toBe(
+    "every day",
+  );
+  expect(label({ kind: "days", every: 1 })).toBe("every day");
+  expect(label({ kind: "days", every: 3 })).toBe("every 3 days");
+  expect(label({ kind: "monthly", day: 1 })).toBe("every month on the 1st");
+  expect(label({ kind: "monthly", day: 22 })).toBe("every month on the 22nd");
+  expect(label({ kind: "monthly", day: 13 })).toBe("every month on the 13th");
+  expect(label({ kind: "monthly", day: 31 })).toBe("every month on the 31st");
+});
+
+test("the weekday of a calendar day, from 0, Sunday", () => {
+  expect(weekdayOf(calendarDay("2026-11-08"))).toBe(0);
+  expect(weekdayOf(calendarDay("2026-11-14"))).toBe(6);
 });

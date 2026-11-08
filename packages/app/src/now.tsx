@@ -23,7 +23,12 @@ import { createCompletion } from "./complete.ts";
 import { Button } from "./components/ui/button.tsx";
 import { Field, FieldError } from "./components/ui/field.tsx";
 import { Input } from "./components/ui/input.tsx";
-import { followUpLabel, localDay } from "./follow-up-date.ts";
+import {
+  followUpLabel,
+  localDay,
+  repeatLabel,
+  weekdayOf,
+} from "./follow-up-date.ts";
 import {
   Item,
   ItemContent,
@@ -31,25 +36,35 @@ import {
   ItemGroup,
 } from "./components/ui/item.tsx";
 import { glance } from "./glance.ts";
+import {
+  noRepeat,
+  RepeatField,
+  repeatOf,
+  startRepeat,
+  type RepeatDraft,
+} from "./repeat-field.tsx";
 
 /**
  * What the capture box holds: its text, the Follow-up date's day and time as the date and time
- * fields give them (`""` when empty), the last failure, and the commands waiting to be retried.
+ * fields give them (`""` when empty) and its Repeat, the last failure, and the commands waiting to
+ * be retried.
  * The app keeps it above the tabs, so changing tabs loses none of it.
  */
 export function useCaptureBox(weft: Weft) {
   const capture = useMemo(() => createCapture(weft), [weft]);
   const [draft, setDraft] = useState(emptyDraft);
   const [failure, setFailure] = useState<string>();
-  const { text, day, time } = draft;
-  const setField = (field: keyof Draft) => (value: string) =>
+  const { text, day, time, repeat } = draft;
+  const followUpDate = followUpDateOf(draft);
+  const setField = (field: "text" | "day" | "time") => (value: string) =>
     setDraft((current) => ({ ...current, [field]: value }));
 
   /** Resolves to true once the Entry is written, with its Follow-up date when it has one. */
   async function submit(): Promise<boolean> {
     const submitted = draft;
+    if (followUpDate === "incomplete") return false;
     try {
-      if (!(await capture(text, followUpDateOf(day, time)))) return false;
+      if (!(await capture(text, followUpDate))) return false;
       setFailure(undefined);
       setDraft((current) => (current === submitted ? emptyDraft : current));
       return true;
@@ -70,6 +85,15 @@ export function useCaptureBox(weft: Weft) {
     setDay: setField("day"),
     time,
     setTime: setField("time"),
+    repeat,
+    setRepeat: (value: RepeatDraft) =>
+      setDraft((current) => ({ ...current, repeat: value })),
+    chooseRepeatKind: (kind: RepeatDraft["kind"]) =>
+      setDraft((current) => ({
+        ...current,
+        repeat: startRepeat(kind, chosenDay(current.day)),
+      })),
+    ready: text.trim() !== "" && followUpDate !== "incomplete",
     failure,
     submit,
   };
@@ -79,24 +103,59 @@ interface Draft {
   readonly text: string;
   readonly day: string;
   readonly time: string;
+  readonly repeat: RepeatDraft;
 }
 
-const emptyDraft: Draft = { text: "", day: "", time: "" };
+const emptyDraft: Draft = { text: "", day: "", time: "", repeat: noRepeat };
 
-function followUpDateOf(day: string, time: string): FollowUpDate | null {
+function followUpDateOf({
+  day,
+  time,
+  repeat,
+}: Draft): FollowUpDate | null | "incomplete" {
   if (!day) return null;
+  const calendar = calendarDayOf(day);
+  const chosen = repeatOf(repeat);
+  if (calendar === undefined || chosen === "incomplete") return "incomplete";
   return {
-    day: calendarDay(day),
+    day: calendar,
     time: time ? timeOfDay(time) : null,
-    repeat: null,
+    repeat: chosen,
   };
+}
+
+/** The date input reports partial years such as `0002` while it is typed. */
+function calendarDayOf(text: string): CalendarDay | undefined {
+  try {
+    return calendarDay(text);
+  } catch {
+    return undefined;
+  }
+}
+
+function chosenDay(text: string) {
+  const day = calendarDayOf(text);
+  return day ? { weekday: weekdayOf(day), date: Number(day.slice(8)) } : null;
 }
 
 export type CaptureBox = ReturnType<typeof useCaptureBox>;
 
 export function NowView({
   weft,
-  captureBox: { text, setText, day, setDay, time, setTime, failure, submit },
+  captureBox: {
+    text,
+    setText,
+    day,
+    setDay,
+    time,
+    setTime,
+    repeat,
+    setRepeat,
+    chooseRepeatKind,
+    ready,
+    failure,
+    submit,
+  },
 }: {
   weft: Weft;
   captureBox: CaptureBox;
@@ -162,11 +221,11 @@ export function NowView({
             onChange={(event) => setText(event.target.value)}
             aria-invalid={failure !== undefined}
           />
-          <Button type="submit" disabled={!text.trim()}>
+          <Button type="submit" disabled={!ready}>
             Add
           </Button>
         </Field>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <label htmlFor="capture-day">Bring back on</label>
           <Input
             id="capture-day"
@@ -183,6 +242,12 @@ export function NowView({
             disabled={!day}
             value={time}
             onChange={(event) => setTime(event.target.value)}
+          />
+          <RepeatField
+            value={repeat}
+            disabled={!day}
+            onKind={chooseRepeatKind}
+            onChange={setRepeat}
           />
         </div>
         <FieldError>{failure}</FieldError>
@@ -239,6 +304,12 @@ export function NowView({
                         group.name === "Late" && "text-late",
                       )}
                     >
+                      {entry.followUpDate!.repeat && (
+                        <span className="me-2">
+                          <span aria-hidden="true">↻ </span>
+                          {repeatLabel(entry.followUpDate!.repeat)}
+                        </span>
+                      )}
                       <time dateTime={followUpDateTime(entry.followUpDate!)}>
                         {followUpLabel(entry.followUpDate!, today)}
                       </time>

@@ -3,6 +3,7 @@ import {
   formatHlc,
   instantFromMs,
   localCalendarDay,
+  nextFollowUpDate,
   parseHlc,
   tableChanges,
   tableNames,
@@ -129,16 +130,8 @@ function completion(
     entryId,
     completedAt: instantFromMs(ms),
     completed,
-    next: followUpDateAfter(completed, localCalendarDay(ms)),
+    next: nextFollowUpDate(completed, localCalendarDay(ms)),
   });
-}
-
-/** Repeats are #10. */
-function followUpDateAfter(
-  _completed: FollowUpDate,
-  _today: CalendarDay,
-): FollowUpDate | null {
-  return null;
 }
 
 function eventFor(

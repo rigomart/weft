@@ -2,7 +2,12 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { calendarDay, makeId, timeOfDay } from "@weft/contracts";
+import {
+  calendarDay,
+  makeId,
+  timeOfDay,
+  type FollowUpDate,
+} from "@weft/contracts";
 import { describeContract } from "@weft/contracts/suite";
 import { openEventLog, openWeft } from "@weft/store";
 import { openLibsqlDatabase } from "./index.ts";
@@ -51,9 +56,8 @@ test("events keep their order when the wall clock goes back, and after reopening
   expect<string[]>(events.map((event) => event.id)).toEqual(writes);
 });
 
-test("completing stores the date that was dealt with, when, and no next date without a Repeat", async () => {
-  const database = openLibsqlDatabase(join(folder, "complete.db"));
-  const at = Date.UTC(2026, 10, 8, 15, 4, 5, 6);
+async function completeOnce(followUpDate: FollowUpDate, at: number) {
+  const database = openLibsqlDatabase(join(folder, `complete-${files++}.db`));
   const weft = await openWeft({
     database,
     deviceId: makeId(Date.now(), randomBytes),
@@ -62,16 +66,11 @@ test("completing stores the date that was dealt with, when, and no next date wit
   const id = <Kind extends "event" | "entry">(_kind: Kind) =>
     makeId<Kind>(Date.now(), randomBytes);
   const entryId = id("entry");
-  const followUpDate = {
-    day: calendarDay("2026-11-08"),
-    time: timeOfDay("09:30"),
-    repeat: null,
-  };
   await weft.run({
     type: "write entry",
     eventId: id("event"),
     entryId,
-    body: "Book the checkup",
+    body: "Water the plants",
     parentEntryId: null,
   });
   await weft.run({
@@ -85,17 +84,50 @@ test("completing stores the date that was dealt with, when, and no next date wit
     eventId: id("event"),
     entryId,
   });
-
   const events = await (await openEventLog(database)).read();
+  const entries = await weft.read({ type: "entries" });
   await database.close();
-  expect(events.at(-1)).toMatchObject({
+  return { entryId, completed: events.at(-1), entries };
+}
+
+// Local noon, so the device's calendar day is 2026-11-08 in any time zone.
+const sundayNoon = new Date(2026, 10, 8, 12, 0, 0, 6).getTime();
+
+test("completing stores the date that was dealt with, when, and no next date without a Repeat", async () => {
+  const followUpDate: FollowUpDate = {
+    day: calendarDay("2026-11-08"),
+    time: timeOfDay("09:30"),
+    repeat: null,
+  };
+  const { entryId, completed } = await completeOnce(followUpDate, sundayNoon);
+  expect(completed).toMatchObject({
     type: "follow-up date completed",
     version: 1,
     content: {
       entryId,
-      completedAt: "2026-11-08T15:04:05.006Z",
+      completedAt: new Date(sundayNoon).toISOString(),
       completed: followUpDate,
       next: null,
     },
   });
+});
+
+test("completing a repeating Follow-up date a week late stores its next occurrence after today", async () => {
+  const lastSunday: FollowUpDate = {
+    day: calendarDay("2026-11-01"),
+    time: null,
+    repeat: { kind: "weekly", weekdays: [0] },
+  };
+  const next = { ...lastSunday, day: calendarDay("2026-11-15") };
+  const { entryId, completed, entries } = await completeOnce(
+    lastSunday,
+    sundayNoon,
+  );
+  expect(completed).toMatchObject({
+    type: "follow-up date completed",
+    content: { entryId, completed: lastSunday, next },
+  });
+  expect(entries).toEqual([
+    expect.objectContaining({ entryId, followUpDate: next }),
+  ]);
 });

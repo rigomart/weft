@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
   calendarDay,
+  localCalendarDay,
   makeId,
+  nextFollowUpDate,
   timeOfDay,
   type EntryId,
   type FollowUpDate,
@@ -386,6 +388,38 @@ export function describeContract(
         }),
       ]);
       expect((await changesUntil(5)).at(-1)).toEqual(["entries"]);
+    });
+
+    test("completing a repeating Follow-up date moves it to its next occurrence after today", async () => {
+      const { weft, id, read, write } = await setup();
+      const entryId = await write("Water the plants");
+      const sundays: FollowUpDate = {
+        day: calendarDay("2020-01-05"),
+        time: timeOfDay("08:00"),
+        repeat: { kind: "weekly", weekdays: [0] },
+      };
+      await weft.run({
+        type: "set follow-up date",
+        eventId: id("event"),
+        entryId,
+        followUpDate: sundays,
+      });
+
+      const before = localCalendarDay(Date.now());
+      await weft.run({
+        type: "complete follow-up date",
+        eventId: id("event"),
+        entryId,
+      });
+      const after = localCalendarDay(Date.now());
+
+      const [entry, ...rest] = await read({ type: "entries" });
+      expect(rest).toEqual([]);
+      expect([
+        nextFollowUpDate(sundays, before),
+        nextFollowUpDate(sundays, after),
+      ]).toContainEqual(entry!.followUpDate);
+      expect(entry!.followUpDate!.day > before).toBe(true);
     });
 
     test("refuses to complete a Follow-up date an Entry does not have", async () => {

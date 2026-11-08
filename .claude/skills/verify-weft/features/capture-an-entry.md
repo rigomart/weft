@@ -1,6 +1,6 @@
 # Capture an entry
 
-The Now tab has a capture box ("What's on your mind?") and an Add button, and under them an optional Follow-up date: "Bring back on" a day, "at" a time. The time field is off until a day is chosen. Each capture writes one "entry written" event to the log, followed by one "follow-up date set" event when a day was chosen. Now is read from the `entries` table built from them, so an Entry and its date are still there after a relaunch. An Entry with a Follow-up date shows in [Now's](now.md) groups with its date ("Tomorrow, 9:30"); one without shows in its Loose list, newest first, with the day it was written.
+The Now tab has a capture box ("What's on your mind?") and an Add button, and under them an optional Follow-up date: "Bring back on" a day, "at" a time, and a Repeat ("Once" by default). The time field and the Repeat are off until a day is chosen. [Repeat a follow-up date](repeat-a-follow-up-date.md) covers the Repeat. Each capture writes one "entry written" event to the log, followed by one "follow-up date set" event when a day was chosen. Now is read from the `entries` table built from them, so an Entry and its date are still there after a relaunch. An Entry with a Follow-up date shows in [Now's](now.md) groups with its date ("Tomorrow, 9:30"); one without shows in its Loose list, newest first, with the day it was written.
 
 ## Entry points and variants
 

@@ -2,9 +2,11 @@ import {
   localCalendarDay,
   type CalendarDay,
   type FollowUpDate,
+  type Repeat,
 } from "@weft/contracts";
 
 const DAY_MS = 86_400_000;
+const A_SUNDAY = Date.UTC(2026, 10, 1);
 
 /** The calendar day `at` falls on in this device's time zone (ADR 0006). */
 export function localDay(at: Date = new Date()): CalendarDay {
@@ -51,4 +53,48 @@ function dayLabel(day: CalendarDay, today: CalendarDay, locale?: string) {
 
 function utcMs(day: CalendarDay): number {
   return Date.parse(`${day}T00:00:00Z`);
+}
+
+/** A Repeat's rhythm, as a card on Now shows it after ↻: "every Sunday", "every 3 days". */
+export function repeatLabel(repeat: Repeat, locale?: string): string {
+  switch (repeat.kind) {
+    case "days":
+      return repeat.every === 1 ? "every day" : `every ${repeat.every} days`;
+    case "weekly":
+      if (repeat.weekdays.length === 7) return "every day";
+      return `every ${repeat.weekdays
+        .map((weekday) =>
+          weekdayName(
+            weekday,
+            repeat.weekdays.length === 1 ? "long" : "short",
+            locale,
+          ),
+        )
+        .join(", ")}`;
+    case "monthly":
+      return `every month on the ${ordinal(repeat.day)}`;
+  }
+}
+
+/** The weekday's name, "Sunday" or "Sun" when `short`; 0 is Sunday. */
+export function weekdayName(
+  weekday: number,
+  width: "long" | "short",
+  locale?: string,
+): string {
+  return new Date(A_SUNDAY + weekday * DAY_MS).toLocaleDateString(locale, {
+    weekday: width,
+    timeZone: "UTC",
+  });
+}
+
+/** 0 is Sunday. */
+export function weekdayOf(day: CalendarDay): number {
+  return new Date(utcMs(day)).getUTCDay();
+}
+
+function ordinal(n: number): string {
+  const suffix = { one: "st", two: "nd", few: "rd", other: "th" } as const;
+  const rule = new Intl.PluralRules("en-US", { type: "ordinal" }).select(n);
+  return `${n}${suffix[rule as keyof typeof suffix] ?? "th"}`;
 }

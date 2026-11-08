@@ -1,6 +1,6 @@
 # Complete a follow-up date
 
-Each card on [Now](now.md) has a ✓ button, named `Complete "<body>"`. Pressing it runs "complete follow-up date": the store writes one "follow-up date completed" event with the Follow-up date that was dealt with (`completed`), when (`completedAt`, an instant), and `next`, which is `null` until Repeats (#10). The Entry's Follow-up date clears and the Entry stays. It leaves its group, whose count drops by one, and a group left empty goes. With no Thread and no Follow-up date left, a top-level Entry is Loose, so it shows at the Loose list, by when it was written.
+Each card on [Now](now.md) has a ✓ button, named `Complete "<body>"`. Pressing it runs "complete follow-up date": the store writes one "follow-up date completed" event with the Follow-up date that was dealt with (`completed`), when (`completedAt`, an instant), and `next`, the Follow-up date the Entry has afterwards. Without a Repeat, `next` is `null`: the Entry's Follow-up date clears and the Entry stays. It leaves its group, whose count drops by one, and a group left empty goes. With no Thread and no Follow-up date left, a top-level Entry is Loose, so it shows at the Loose list, by when it was written.
 
 ## Entry points and variants
 
@@ -28,7 +28,7 @@ Read Now with the `eval` in [Now](now.md). Each button's ref is in `snapshot -i`
 ## Not covered
 
 - A refusal or failure while completing, which the window cannot cause. The window then shows `Weft refused to complete "<body>": …` or `Weft couldn't complete "<body>": …` above the groups. The contract suite covers the refusals.
-- A Follow-up date with a Repeat, which nothing in the window can set yet (#10).
+- A Follow-up date with a Repeat: [Repeat a follow-up date](repeat-a-follow-up-date.md).
 
 ## Traps
 
