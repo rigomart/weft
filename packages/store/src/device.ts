@@ -2,10 +2,8 @@ import { isId, type DeviceId } from "@weft/core";
 import type { Database } from "./database.ts";
 
 /**
- * This device's ID, which every event it writes carries (ADR 0002). It is
- * kept in the database beside the log, so a data folder keeps its ID across
- * launches and a new one gets its own. `newDeviceId` makes the ID the first
- * time.
+ * This device's ID, carried by every event it writes (ADR 0002). It is kept in the database beside
+ * the log; `newDeviceId` makes it the first time.
  */
 export async function openDeviceId(
   database: Database,

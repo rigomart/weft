@@ -122,7 +122,7 @@ async function start(launch: Launch) {
   await window.loadURL(launch.rendererUrl ?? RENDERER_URL);
 }
 
-/** The window reaches Weft only through these channels (ADR 0005, ADR 0010). */
+/** Serves the contract to the window over IPC (ADR 0010). */
 function serveToWindow({ weft }: OpenedWeft) {
   const handlers = serveWeft(weft, (call, error) =>
     console.error(`Weft failed on ${call}: ${describe(error)}`),

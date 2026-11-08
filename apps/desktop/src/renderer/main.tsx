@@ -9,7 +9,6 @@ import type { WeftBridge } from "../ipc/protocol.ts";
 
 declare global {
   interface Window {
-    /** Set by the preload. */
     readonly weftBridge?: WeftBridge;
   }
 }

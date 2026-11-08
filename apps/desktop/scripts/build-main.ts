@@ -3,7 +3,6 @@ import { join } from "node:path";
 
 const root = join(import.meta.dir, "..");
 
-/** Builds the main process and the window's preload into `dist/`. */
 export async function buildMain() {
   await rm(join(root, "dist/main"), { recursive: true, force: true });
   await rm(join(root, "dist/preload"), { recursive: true, force: true });

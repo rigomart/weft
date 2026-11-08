@@ -45,7 +45,6 @@ export function useCaptureBox(weft: Weft) {
 
 export type CaptureBox = ReturnType<typeof useCaptureBox>;
 
-/** The capture box and every Entry, newest first. The real glance view comes later (#6). */
 export function NowView({
   weft,
   captureBox: { text, setText, failure, submit },
@@ -98,7 +97,6 @@ export function NowView({
   );
 }
 
-/** Every Entry, read again each time Weft says the entries changed. */
 function useEntries(weft: Weft) {
   const [entries, setEntries] = useState<readonly EntryListItem[]>([]);
   const [failure, setFailure] = useState<string>();
