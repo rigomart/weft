@@ -25,6 +25,7 @@ Weft is a desktop app first. A phone app may come later. Vita OS already runs on
 
 - macOS first, as Vita OS. Windows, Linux, signing and auto-update come later (Vita OS ADR 0043 is the reference).
 - A phone app means a second seam implementation, not a rewrite.
+- The window reaches `store` only through the contract in ADR 0010, which the main process serves over IPC.
 
 ## Amendment: the database runs in the main process
 

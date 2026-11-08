@@ -12,6 +12,7 @@
     "test": "bun test --pass-with-no-tests"
   },
   "dependencies": {
+    "@weft/contracts": "workspace:*",
     "@weft/core": "workspace:*"
   },
   "devDependencies": {

@@ -6,7 +6,11 @@
   },
   "overrides": [
     {
-      "files": ["packages/core/**", "packages/store/**"],
+      "files": [
+        "packages/core/**",
+        "packages/store/**",
+        "packages/contracts/**"
+      ],
       "plugins": ["import"],
       "rules": {
         "import/no-nodejs-modules": "error",
@@ -16,11 +20,11 @@
             "patterns": [
               {
                 "group": ["bun:*", "!bun:test"],
-                "message": "core and store run on every host: no Bun-only API (ADR 0005)."
+                "message": "core, store and contracts run on every host: no Bun-only API (ADR 0005, ADR 0010)."
               },
               {
                 "group": ["electron", "electron/**", "@electron/**"],
-                "message": "core and store never import Electron; the desktop host does (ADR 0005, ADR 0008)."
+                "message": "core, store and contracts never import Electron; the desktop host does (ADR 0005, ADR 0008, ADR 0010)."
               },
               {
                 "group": [
@@ -38,7 +42,30 @@
                   "expo-sqlite/**",
                   "@op-engineering/**"
                 ],
-                "message": "core and store reach the database only through the database seam; each host provides the driver (ADR 0005)."
+                "message": "core, store and contracts reach the database only through the database seam; each host provides the driver (ADR 0005)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/app/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@weft/core",
+                  "@weft/core/**",
+                  "@weft/store",
+                  "@weft/store/**",
+                  "@weft/database-*",
+                  "@weft/database-*/**"
+                ],
+                "message": "The interface reaches Weft only through @weft/contracts (ADR 0010)."
               }
             ]
           }

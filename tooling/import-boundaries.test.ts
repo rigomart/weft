@@ -43,26 +43,49 @@ const forbidden = [
   ["@sqlite.org/sqlite-wasm", "eslint(no-restricted-imports)"],
 ] as const;
 
-describe.each(["packages/core", "packages/store"])("%s", (workspace) => {
-  test.each(forbidden)("rejects %s", (specifier, rule) => {
-    const { exitCode, output } = lint(`${workspace}/src/probe.ts`, specifier);
-    expect(exitCode).not.toBe(0);
-    expect(output).toContain(rule);
-  });
+describe.each(["packages/core", "packages/store", "packages/contracts"])(
+  "%s",
+  (workspace) => {
+    test.each(forbidden)("rejects %s", (specifier, rule) => {
+      const { exitCode, output } = lint(`${workspace}/src/probe.ts`, specifier);
+      expect(exitCode).not.toBe(0);
+      expect(output).toContain(rule);
+    });
 
-  test("allows bun:test", () => {
-    const { exitCode, output } = lint(
-      `${workspace}/src/probe.test.ts`,
-      "bun:test",
-    );
+    test("allows bun:test", () => {
+      const { exitCode, output } = lint(
+        `${workspace}/src/probe.test.ts`,
+        "bun:test",
+      );
+      expect(output).toContain("Found 0 warnings and 0 errors.");
+      expect(exitCode).toBe(0);
+    });
+  },
+);
+
+describe.each(["packages/app", "apps/desktop"])("%s", (workspace) => {
+  test("may import Node built-ins", () => {
+    const { exitCode, output } = lint(`${workspace}/src/probe.ts`, "node:fs");
     expect(output).toContain("Found 0 warnings and 0 errors.");
     expect(exitCode).toBe(0);
   });
 });
 
-describe.each(["packages/app", "apps/desktop"])("%s", (workspace) => {
-  test("may import Node built-ins", () => {
-    const { exitCode, output } = lint(`${workspace}/src/probe.ts`, "node:fs");
+describe("packages/app", () => {
+  test.each(["@weft/core", "@weft/store", "@weft/database-libsql"])(
+    "rejects %s",
+    (specifier) => {
+      const { exitCode, output } = lint("packages/app/src/probe.ts", specifier);
+      expect(exitCode).not.toBe(0);
+      expect(output).toContain("@weft/contracts (ADR 0010)");
+    },
+  );
+
+  test("allows @weft/contracts", () => {
+    const { exitCode, output } = lint(
+      "packages/app/src/probe.ts",
+      "@weft/contracts",
+    );
     expect(output).toContain("Found 0 warnings and 0 errors.");
     expect(exitCode).toBe(0);
   });

@@ -54,6 +54,17 @@
         "typescript": "catalog:",
       },
     },
+    "packages/contracts": {
+      "name": "@weft/contracts",
+      "version": "0.0.0",
+      "dependencies": {
+        "@weft/core": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "1.3.14",
+        "typescript": "catalog:",
+      },
+    },
     "packages/core": {
       "name": "@weft/core",
       "version": "0.0.0",
@@ -71,6 +82,7 @@
       },
       "devDependencies": {
         "@types/bun": "1.3.14",
+        "@weft/contracts": "workspace:*",
         "typescript": "catalog:",
       },
     },
@@ -78,6 +90,7 @@
       "name": "@weft/store",
       "version": "0.0.0",
       "dependencies": {
+        "@weft/contracts": "workspace:*",
         "@weft/core": "workspace:*",
       },
       "devDependencies": {
@@ -454,6 +467,8 @@
     "@vitejs/plugin-react": ["@vitejs/plugin-react@6.2.1", "", { "dependencies": { "@rolldown/pluginutils": "^1.0.1" }, "peerDependencies": { "@rolldown/plugin-babel": "^0.1.7 || ^0.2.0 || ^0.3.0", "babel-plugin-react-compiler": "^1.0.0", "oxc-transform-react": ">=0.152.0 <0.157.0", "vite": "^8.0.0" }, "optionalPeers": ["@rolldown/plugin-babel", "babel-plugin-react-compiler", "oxc-transform-react"] }, "sha512-9KyWCij3r0+qLG3Q62vBmv0VyevmYibAtxaCIVK9o0k6CXgaajZRIe8tpfchQcdZArJ5b/7OrIz4W3b2uxVRDA=="],
 
     "@weft/app": ["@weft/app@workspace:packages/app"],
+
+    "@weft/contracts": ["@weft/contracts@workspace:packages/contracts"],
 
     "@weft/core": ["@weft/core@workspace:packages/core"],
 
