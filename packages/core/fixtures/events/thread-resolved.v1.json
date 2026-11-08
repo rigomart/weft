@@ -1,0 +1,11 @@
+{
+  "id": "01a1bcf2-6aeb-7ac1-b039-fa5b0b097499",
+  "deviceId": "01a1bcf2-3ff3-740f-8223-3d66fb985184",
+  "hlc": "2026-11-08T20:56:06.123Z-0000",
+  "type": "thread resolved",
+  "version": 1,
+  "content": {
+    "threadId": "01a1bcf2-3ff3-7f1f-919c-84ff8ec7c804",
+    "resolvedAt": "2026-12-01T08:00:00.000Z"
+  }
+}
