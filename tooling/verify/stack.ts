@@ -233,25 +233,33 @@ async function debugPortAnswers(port: number): Promise<boolean> {
 function electronBinary(logsDir: string): string {
   const require = createRequire(join(DESKTOP_DIR, "package.json"));
   const dir = join(require.resolve("electron/package.json"), "..");
-  const binary = join(
-    dir,
-    "dist",
-    readFileSync(join(dir, "path.txt"), "utf8").trim(),
-  );
-  if (existsSync(binary)) return binary;
-  // bun install skips electron's postinstall, which downloads the binary.
+  const binary = (): string | undefined => {
+    const pathFile = join(dir, "path.txt");
+    if (!existsSync(pathFile)) return undefined;
+    const relative = readFileSync(pathFile, "utf8").trim();
+    if (relative === "") return undefined;
+    const path = join(dir, "dist", relative);
+    return statSync(path, { throwIfNoEntry: false })?.isFile()
+      ? path
+      : undefined;
+  };
+  const found = binary();
+  if (found) return found;
+  // Electron downloads its binary on first use, not on install, and only then
+  // writes path.txt. Its own downloader prints to stdout, which belongs to our JSON.
   const install = run(["bun", join(dir, "install.js")], dir);
   writeFileSync(
     join(logsDir, "electron-install.log"),
     install.stdout + install.stderr,
   );
-  if (install.code !== 0 || !existsSync(binary)) {
+  const downloaded = binary();
+  if (install.code !== 0 || !downloaded) {
     throw new VerifyError(
       "the Electron binary is missing and could not be downloaded",
       `read ${join(logsDir, "electron-install.log")}`,
     );
   }
-  return binary;
+  return downloaded;
 }
 
 function packagedBinary(): string {
