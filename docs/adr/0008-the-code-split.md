@@ -11,6 +11,7 @@ Vita OS converged on rules in a framework-free package with hosts around it. Tha
 
 - `packages/core`: the rules, the event definitions, and building tables from events. No framework, driver or Node code.
 - `packages/store`: the database and crypto seams, the event log, and the sync client.
+- `packages/contracts`: the contract between the interface and Weft, and the suite every client runs (ADR 0010). `packages/app` imports only the contract; `store` implements it in-process.
 - `packages/app`: the React interface, with shadcn/ui as shipped and no styling of our own until a later design pass.
 - `apps/desktop`: the Electron host.
 - `apps/sync`: the Worker and the Durable Object (ADR 0003).

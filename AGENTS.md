@@ -17,10 +17,11 @@ The split is ADR 0008:
 
 - `packages/core`: the rules, the event definitions, and building tables from events. No framework, driver or Node code.
 - `packages/store`: the database and crypto seams, the event log, and later the sync client. It never touches a driver or Node directly; each host provides the seams (ADR 0005).
+- `packages/contracts`: the contract between the interface and Weft, and the suite every implementation runs (ADR 0010). `packages/app` reaches Weft only through it; `store` implements it in-process.
 - `packages/app`: the React interface.
 - `apps/desktop`: the Electron host. It opens the database and provides the seams.
 
-Lint fails on any Node built-in, Bun API (except `bun:test`), Electron or database driver import in `core` or `store`. The rule is the override in `.oxlintrc.json`, and `tooling/import-boundaries.test.ts` checks it. A new workspace held to the same boundary goes in that override's `files`.
+Lint fails on any Node built-in, Bun API (except `bun:test`), Electron or database driver import in `core`, `store` or `contracts`. The rule is the override in `.oxlintrc.json`, and `tooling/import-boundaries.test.ts` checks it. A new workspace held to the same boundary goes in that override's `files`. A second override fails any import of `core`, `store` or a database package in `packages/app`, which reaches Weft only through `contracts` (ADR 0010).
 
 ## The desktop app
 
