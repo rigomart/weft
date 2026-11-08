@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>vita-next prototype</title>
+<title>Weft prototype</title>
 <style>
 :root {
   --bg: #f6f5f2; --surface: #ffffff; --surface-2: #efede8; --ink: #1c1c1e; --ink-2: #54545a; --ink-3: #8c8c92;
@@ -354,7 +354,7 @@ function seed() {
 }
 
 // ---------- state ----------
-const KEY = "vita-next-proto-v3";
+const KEY = "weft-proto-v3";
 let S;
 try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
 if (!S || !S.entries) S = seed();
@@ -529,7 +529,7 @@ function renderTop() {
   const ae = document.activeElement && document.activeElement.id;
   const keep = $("cap-text") ? $("cap-text").value : "";
   $("top").innerHTML = `
-    <div class="brand">vita-next <small>prototype</small></div>
+    <div class="brand">weft <small>prototype</small></div>
     <form id="capture" autocomplete="off">
       <input type="text" id="cap-text" placeholder="What's happening? Enter drops it at now" value="${h(keep)}">
       <input type="date" id="cap-date" title="Bring it back on (optional)">

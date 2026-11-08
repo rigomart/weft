@@ -1,12 +1,14 @@
-# vita-next
+# Weft
 
-Working name for the successor to Vita OS (`~/projects/vita-os`). Vita OS stays in use as the reference until this replaces it, then it is sunset.
+The successor to [Vita OS](https://github.com/rigomart/vita-os). Vita OS stays in use as the reference until this replaces it, then it is sunset.
 
-The starting point: Vita OS stores a life as a tree of containers (Threads holding Tasks and Notes), but a life is a web. Here, everything is an **entry** that can connect to any number of **Threads** and to other entries, and the Dashboard stays the main view.
+The starting point: Vita OS stores a life as a tree of containers (Threads holding Tasks and Notes), but a life is a web. Here, everything is an **Entry** that can be on any number of **Threads**, an Entry can carry **Updates** saying what happened next, and the quick-glance view (Vita OS's Dashboard, ported) stays the main view. The data lives on the person's device, with optional end-to-end encrypted sync through Cloudflare.
 
 ## Where things are
 
 - `docs/research/2026-11-08-data-shape-analysis.md`: the diagnosis, the six cases that tested it, and the proposal.
+- `docs/decisions/2026-11-08-foundations.md`: three options for each decision that is costly to change, with the reasoning.
+- `docs/adr/`: the decisions themselves. ADR 0001 holds the model and its names until `GLOSSARY.md` is seeded with the first code.
 - `prototype/index.html`: a clickable prototype with no build step. Open it in a browser.
 
 ## Prototype rounds
