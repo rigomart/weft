@@ -8,7 +8,9 @@ The starting point: Vita OS stores a life as a tree of containers (Threads holdi
 
 - `docs/research/2026-11-08-data-shape-analysis.md`: the diagnosis, the six cases that tested it, and the proposal.
 - `docs/decisions/2026-11-08-foundations.md`: three options for each decision that is costly to change, with the reasoning.
-- `docs/adr/`: the decisions themselves. ADR 0001 holds the model and its names until `GLOSSARY.md` is seeded with the first code.
+- `docs/adr/`: the decisions themselves.
+- `GLOSSARY.md`: the model's names, seeded from ADR 0001.
+- `AGENTS.md`: how to run the checks and where each workspace's responsibility ends.
 - `prototype/index.html`: a clickable prototype with no build step. Open it in a browser.
 
 ## Prototype rounds
