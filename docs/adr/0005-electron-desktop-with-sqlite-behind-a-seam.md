@@ -25,3 +25,17 @@ Weft is a desktop app first. A phone app may come later. Vita OS already runs on
 
 - macOS first, as Vita OS. Windows, Linux, signing and auto-update come later (Vita OS ADR 0043 is the reference).
 - A phone app means a second seam implementation, not a rewrite.
+
+## Amendment: the database runs in the main process
+
+**Date:** 2026-11-08, decided in #28
+
+The SQLite file is opened in Electron's main process, not in a `utilityProcess`. The window reaches it over IPC to main. There is no local server, socket or port.
+
+- One process fewer, and no second hop for every call through main or a `MessagePort`.
+- Main holds the single-instance lock for the data folder, so the process that opens the file is the one that owns it.
+- libsql's file driver does its work synchronously behind its promises, so each query holds main's event loop while it runs. Queries on one person's data are short.
+
+Considered: **a `utilityProcess` for the database.** It keeps main responsive during long queries and survives a crash in the native driver, at the cost of a second process to start, watch and package, and a relay for every call.
+
+Look again if rebuilding tables from the log (ADR 0002), or any other query, visibly stalls the window. Moving the database then changes only `apps/desktop`, because `store` reaches it through the same database seam either way.
