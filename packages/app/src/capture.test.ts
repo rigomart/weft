@@ -1,5 +1,12 @@
 import { expect, test } from "bun:test";
-import { makeId, type Command, type Weft } from "@weft/contracts";
+import {
+  calendarDay,
+  makeId,
+  timeOfDay,
+  type Command,
+  type FollowUpDate,
+  type Weft,
+} from "@weft/contracts";
 
 import { createCapture } from "./capture.ts";
 
@@ -55,4 +62,51 @@ test("changing the text after a failure makes a new command", async () => {
   await expect(capture("Desk chair")).rejects.toThrow();
   await capture("Desk chair?");
   expect(sent[1]!.eventId).not.toBe(sent[0]!.eventId);
+});
+
+const entryIdOf = (command: Command) =>
+  (command as Extract<Command, { type: "write entry" }>).entryId;
+
+const tomorrow: FollowUpDate = {
+  day: calendarDay("2026-11-09"),
+  time: timeOfDay("09:30"),
+  repeat: null,
+};
+
+test("with a Follow-up date, writes the Entry and then sets its date", async () => {
+  const { sent, capture } = recording(["ok", "ok"]);
+  expect(await capture("Book the checkup", tomorrow)).toBe(true);
+  expect(sent).toEqual([
+    expect.objectContaining({ type: "write entry", body: "Book the checkup" }),
+    {
+      type: "set follow-up date",
+      eventId: expect.any(String),
+      entryId: entryIdOf(sent[0]!),
+      followUpDate: tomorrow,
+    },
+  ]);
+  expect(sent[1]!.eventId).not.toBe(sent[0]!.eventId);
+});
+
+test("a retry after the date failed sends both commands again, unchanged", async () => {
+  const { sent, capture } = recording(["ok", "fail", "ok", "ok"]);
+  await expect(capture("Book the checkup", tomorrow)).rejects.toThrow();
+  await capture("Book the checkup", tomorrow);
+  expect(sent).toHaveLength(4);
+  expect(sent[2]).toEqual(sent[0]!);
+  expect(sent[3]).toEqual(sent[1]!);
+});
+
+test("a date changed after a failure is set on the same Entry, by a new command", async () => {
+  const { sent, capture } = recording(["ok", "fail", "ok", "ok"]);
+  await expect(capture("Book the checkup", tomorrow)).rejects.toThrow();
+  await capture("Book the checkup", { ...tomorrow, time: null });
+  expect(sent[2]).toEqual(sent[0]!);
+  expect(sent[3]).toEqual({
+    type: "set follow-up date",
+    eventId: expect.any(String),
+    entryId: entryIdOf(sent[1]!),
+    followUpDate: { ...tomorrow, time: null },
+  });
+  expect(sent[3]!.eventId).not.toBe(sent[1]!.eventId);
 });

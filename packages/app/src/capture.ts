@@ -1,4 +1,9 @@
-import { makeId, type Command, type Weft } from "@weft/contracts";
+import {
+  makeId,
+  type Command,
+  type FollowUpDate,
+  type Weft,
+} from "@weft/contracts";
 
 type NewId = <Kind extends "event" | "entry">(
   kind: Kind,
@@ -9,29 +14,66 @@ const newId: NewId = () =>
     crypto.getRandomValues(new Uint8Array(length)),
   );
 
+interface Commands {
+  readonly write: Extract<Command, { type: "write entry" }>;
+  readonly setFollowUpDate: Extract<
+    Command,
+    { type: "set follow-up date" }
+  > | null;
+}
+
 /**
- * Writes an Entry from what was typed in the capture box. Until one goes through, capturing the same
- * text sends the same command again, with the same IDs, so a retry after a failure whose outcome is
- * unknown never stores the Entry twice (ADR 0010). Resolves to false when there is nothing to
- * write.
+ * Writes an Entry from what was typed in the capture box, then sets its Follow-up date when it has
+ * one. Until a capture goes through, capturing the same text sends the same "write entry" again,
+ * with the same IDs, so a retry after a failure whose outcome is unknown never stores the Entry
+ * twice (ADR 0010). The same goes for its date, and a date changed before the retry is set on that
+ * same Entry. Resolves to false when there is nothing to write.
  */
 export function createCapture(weft: Weft, makeNewId: NewId = newId) {
-  let pending: Extract<Command, { type: "write entry" }> | undefined;
-  return async function capture(text: string): Promise<boolean> {
+  let pending: Commands | undefined;
+  return async function capture(
+    text: string,
+    followUpDate: FollowUpDate | null = null,
+  ): Promise<boolean> {
     const body = text.trim();
     if (!body) return false;
-    if (pending?.body !== body) {
+    if (pending?.write.body !== body) {
+      const entryId = makeNewId("entry");
       pending = {
-        type: "write entry",
-        eventId: makeNewId("event"),
-        entryId: makeNewId("entry"),
-        body,
-        parentEntryId: null,
+        write: {
+          type: "write entry",
+          eventId: makeNewId("event"),
+          entryId,
+          body,
+          parentEntryId: null,
+        },
+        setFollowUpDate: null,
       };
     }
-    const command = pending;
-    await weft.run(command);
-    if (pending === command) pending = undefined;
+    if (
+      !sameFollowUpDate(pending.setFollowUpDate?.followUpDate, followUpDate)
+    ) {
+      pending = {
+        write: pending.write,
+        setFollowUpDate: followUpDate && {
+          type: "set follow-up date",
+          eventId: makeNewId("event"),
+          entryId: pending.write.entryId,
+          followUpDate,
+        },
+      };
+    }
+    const commands = pending;
+    await weft.run(commands.write);
+    if (commands.setFollowUpDate) await weft.run(commands.setFollowUpDate);
+    if (pending === commands) pending = undefined;
     return true;
   };
+}
+
+function sameFollowUpDate(
+  a: FollowUpDate | null | undefined,
+  b: FollowUpDate | null,
+) {
+  return JSON.stringify(a ?? null) === JSON.stringify(b);
 }
