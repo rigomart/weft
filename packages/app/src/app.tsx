@@ -6,7 +6,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "./components/ui/tabs.tsx";
-import { NowView } from "./now.tsx";
+import { NowView, useCaptureBox } from "./now.tsx";
 
 /** The three views, by their working names in GLOSSARY.md. */
 export const views = [
@@ -16,6 +16,7 @@ export const views = [
 ] as const;
 
 export function App({ weft }: { weft: Weft }) {
+  const captureBox = useCaptureBox(weft);
   return (
     <Tabs defaultValue="now" className="min-h-svh">
       <header className="border-b p-2">
@@ -28,7 +29,7 @@ export function App({ weft }: { weft: Weft }) {
         </TabsList>
       </header>
       <TabsContent value="now">
-        <NowView weft={weft} />
+        <NowView weft={weft} captureBox={captureBox} />
       </TabsContent>
       <TabsContent value="workspace" />
       <TabsContent value="history" />

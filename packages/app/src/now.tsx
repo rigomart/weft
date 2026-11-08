@@ -13,34 +13,57 @@ import {
   ItemGroup,
 } from "./components/ui/item.tsx";
 
-/** The capture box and every Entry, newest first. The real glance view comes later (#6). */
-export function NowView({ weft }: { weft: Weft }) {
-  const { entries, failure: listFailure } = useEntries(weft);
+/**
+ * What the capture box holds: its text, the last failure, and the command waiting to be retried.
+ * The app keeps it above the tabs, so changing tabs loses none of it.
+ */
+export function useCaptureBox(weft: Weft) {
   const capture = useMemo(() => createCapture(weft), [weft]);
   const [text, setText] = useState("");
   const [failure, setFailure] = useState<string>();
-  const box = useRef<HTMLInputElement>(null);
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
+  /** Resolves to true once the Entry is written. */
+  async function submit(): Promise<boolean> {
     const submitted = text;
     try {
-      if (!(await capture(submitted))) return;
+      if (!(await capture(submitted))) return false;
       setFailure(undefined);
       setText((current) => (current === submitted ? "" : current));
-      box.current?.focus();
+      return true;
     } catch (error) {
       setFailure(
         error instanceof WeftError
           ? `Weft refused this entry: ${error.message}`
           : `Weft couldn't save this entry: ${messageOf(error)}`,
       );
+      return false;
     }
+  }
+
+  return { text, setText, failure, submit };
+}
+
+export type CaptureBox = ReturnType<typeof useCaptureBox>;
+
+/** The capture box and every Entry, newest first. The real glance view comes later (#6). */
+export function NowView({
+  weft,
+  captureBox: { text, setText, failure, submit },
+}: {
+  weft: Weft;
+  captureBox: CaptureBox;
+}) {
+  const { entries, failure: listFailure } = useEntries(weft);
+  const box = useRef<HTMLInputElement>(null);
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (await submit()) box.current?.focus();
   }
 
   return (
     <div className="flex flex-col gap-4 p-2">
-      <form onSubmit={submit} className="flex flex-col gap-2">
+      <form onSubmit={onSubmit} className="flex flex-col gap-2">
         <Field orientation="horizontal" data-invalid={failure !== undefined}>
           <Input
             ref={box}

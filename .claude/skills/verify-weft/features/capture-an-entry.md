@@ -6,6 +6,7 @@ The Now tab has a capture box ("What's on your mind?") and an Add button. Under 
 
 - Typing in the box and pressing Enter
 - Typing in the box and clicking Add
+- Changing tabs with text in the box
 - Quit and relaunch: `verify down` without `--purge`, then `verify up` on the same instance name
 
 ## Preconditions
@@ -21,7 +22,7 @@ Right after each action, read the box (the window's only `input`), focus, Add, t
 
 Each item is `[body, datetime, shown day]`. The `datetime` is a UTC ISO instant, such as `2026-11-08T22:02:36.481Z`. The shown day is that instant's day in the Mac's time zone, such as `Nov 8`.
 
-1. Before typing, `add` is `true` and `items` is `[]`. After typing "Desk chair?", `add` is `false`.
+1. Before typing, `add` is `true` and `items` is `[]`. After typing "Desk chair?", `add` is `false`. Clicking the Workspace tab, then the Now tab, keeps the text: `box` is `"Desk chair?"` and `add` is `false`. Click the box again before typing more.
 2. Clicking Add gives `box` `""`, `focus` `"What's on your mind?"`, `add` `true`, `alerts` `0`, and one item: `["Desk chair?", <its datetime>, <today>]`.
 3. Typing "Back stiff after the drive" and pressing Enter gives two items: "Back stiff after the drive", then "Desk chair?". The first item's `datetime` is the later one.
 4. Typing three spaces and pressing Enter changes nothing: `add` is `true`, `alerts` is `0`, and `items` is the same as in check 3.
