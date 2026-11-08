@@ -21,3 +21,9 @@ The glance view starts as a port of Vita OS's Dashboard, adjusted to Entries and
 
 - **One app package.** The fastest start, but rules mix with the interface and storage, and a second host means pulling them apart.
 - **Only `core` and `app`, with thin hosts.** Storage and sync land in the app or the host, where Vita OS first put them and later had to move them out.
+
+## Amendment: shadcn/ui on Base UI
+
+**Date:** 2026-11-08, settled in #1 and set up in #28
+
+`packages/app` uses shadcn/ui on Base UI (`@base-ui/react`), not Radix, with the `base-nova` style as the shadcn CLI ships it. Components are added with the CLI from `packages/app` and kept as shipped, apart from formatting. There is no styling of our own until a later design pass. Hosts import `@weft/app/styles.css`.
