@@ -17,9 +17,12 @@ function lint(file: string, specifier: string) {
     `import * as probe from "${specifier}";\nexport { probe };\n`,
   );
   try {
-    const result = Bun.spawnSync([oxlint, "--deny-warnings", file], {
-      cwd: dir,
-    });
+    const result = Bun.spawnSync(
+      [oxlint, "--format", "default", "--deny-warnings", file],
+      {
+        cwd: dir,
+      },
+    );
     return { exitCode: result.exitCode, output: result.stdout.toString() };
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -52,7 +55,7 @@ describe.each(["packages/core", "packages/store"])("%s", (workspace) => {
       `${workspace}/src/probe.test.ts`,
       "bun:test",
     );
-    expect(output).toBe("");
+    expect(output).toContain("Found 0 warnings and 0 errors.");
     expect(exitCode).toBe(0);
   });
 });
@@ -60,7 +63,7 @@ describe.each(["packages/core", "packages/store"])("%s", (workspace) => {
 describe.each(["packages/app", "apps/desktop"])("%s", (workspace) => {
   test("may import Node built-ins", () => {
     const { exitCode, output } = lint(`${workspace}/src/probe.ts`, "node:fs");
-    expect(output).toBe("");
+    expect(output).toContain("Found 0 warnings and 0 errors.");
     expect(exitCode).toBe(0);
   });
 });
