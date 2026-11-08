@@ -5,7 +5,8 @@ const root = join(import.meta.dir, "..");
 
 export async function buildMain() {
   await rm(join(root, "dist/main"), { recursive: true, force: true });
-  const build = await Bun.build({
+  await rm(join(root, "dist/preload"), { recursive: true, force: true });
+  await build("main process", {
     entrypoints: [join(root, "src/main/main.ts")],
     outdir: join(root, "dist/main"),
     target: "node",
@@ -14,9 +15,22 @@ export async function buildMain() {
     external: ["electron", "@libsql/client"],
     sourcemap: "linked",
   });
-  if (!build.success) {
-    for (const log of build.logs) console.error(log);
-    throw new Error("The main process did not build.");
+  // A sandboxed preload runs as a CommonJS script that may require only Electron's renderer modules.
+  await build("preload", {
+    entrypoints: [join(root, "src/preload/preload.ts")],
+    outdir: join(root, "dist/preload"),
+    naming: "[name].cjs",
+    target: "browser",
+    format: "cjs",
+    external: ["electron"],
+  });
+}
+
+async function build(name: string, config: Bun.BuildConfig) {
+  const result = await Bun.build(config);
+  if (!result.success) {
+    for (const log of result.logs) console.error(log);
+    throw new Error(`The ${name} did not build.`);
   }
 }
 

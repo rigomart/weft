@@ -16,6 +16,9 @@
   "dependencies": {
     "@libsql/client": "0.18.0",
     "@weft/app": "workspace:*",
+    "@weft/contracts": "workspace:*",
+    "@weft/database-libsql": "workspace:*",
+    "@weft/store": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:"
   },

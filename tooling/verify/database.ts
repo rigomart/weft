@@ -57,7 +57,7 @@ export function queryDatabase(name: string, sql: string) {
   } catch (error) {
     throw new VerifyError(
       `the query failed: ${error instanceof Error ? error.message : String(error)}`,
-      "check the statement; the tables come with the event log, so a fresh database has none",
+      "check the statement; Weft creates the event log's tables when it opens the database",
     );
   } finally {
     db.close();

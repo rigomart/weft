@@ -1,9 +1,12 @@
+import type { Weft } from "@weft/contracts";
+
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "./components/ui/tabs.tsx";
+import { NowView, useCaptureBox } from "./now.tsx";
 
 /** The three views, by their working names in GLOSSARY.md. */
 export const views = [
@@ -12,7 +15,8 @@ export const views = [
   { value: "history", label: "History" },
 ] as const;
 
-export function App() {
+export function App({ weft }: { weft: Weft }) {
+  const captureBox = useCaptureBox(weft);
   return (
     <Tabs defaultValue="now" className="min-h-svh">
       <header className="border-b p-2">
@@ -24,9 +28,11 @@ export function App() {
           ))}
         </TabsList>
       </header>
-      {views.map((view) => (
-        <TabsContent key={view.value} value={view.value} />
-      ))}
+      <TabsContent value="now">
+        <NowView weft={weft} captureBox={captureBox} />
+      </TabsContent>
+      <TabsContent value="workspace" />
+      <TabsContent value="history" />
     </Tabs>
   );
 }

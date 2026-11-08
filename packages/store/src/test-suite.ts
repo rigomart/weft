@@ -12,6 +12,7 @@ import {
   type WeftEvent,
 } from "@weft/core";
 import type { Database, SqlExecutor, SqlRow } from "./database.ts";
+import { openDeviceId } from "./device.ts";
 import { openEventLog, sqlName } from "./event-log.ts";
 
 const NOV_8 = Date.UTC(2026, 10, 8, 20, 55, 55, 123);
@@ -188,6 +189,18 @@ export function describeStore(name: string, open: () => Promise<Database>) {
         expect(
           (await db.execute("UPDATE t SET n = 1 WHERE n = 42")).rowsAffected,
         ).toBe(1);
+      });
+    });
+
+    describe("the device's ID", () => {
+      test("is made once and kept when the tables are rebuilt", async () => {
+        const db = await database();
+        const first = makeId<"device">(NOV_8, () => new Uint8Array(10));
+        const second = makeId<"device">(NOV_8 + 1, () => new Uint8Array(10));
+        expect(await openDeviceId(db, () => first)).toBe(first);
+        await (await openEventLog(db)).rebuildTables();
+        expect(await openDeviceId(db, () => second)).toBe(first);
+        expect(await count(db, "device")).toBe(1);
       });
     });
 

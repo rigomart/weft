@@ -1,6 +1,6 @@
 # Open the app
 
-Starting Weft opens a window with the three views as tabs in its header, Now selected and each view empty for now, and creates the database in the data folder the run was pointed at.
+Starting Weft opens a window with the three views as tabs in its header, Now selected with the capture box ([capture an entry](capture-an-entry.md)) and the other views empty for now, and creates the database, with the event log's tables, in the data folder the run was pointed at.
 
 ## Entry points and variants
 
@@ -16,9 +16,9 @@ Starting Weft opens a window with the three views as tabs in its header, Now sel
 1. `snapshot -i` lists exactly `tab "Now" [selected]`, `tab "Workspace"`, `tab "History"` and `tabpanel "Now"`, and `get url` is `app://weft/`.
 2. Clicking each tab selects it and shows only its view, right after the click: `{"selected":"<tab>","panels":["<tab>"]}` from
    `JSON.stringify({selected: document.querySelector('[role=tab][aria-selected=true]').textContent, panels: [...document.querySelectorAll('[role=tabpanel]:not([inert])')].map(p => document.getElementById(p.getAttribute('aria-labelledby')).textContent)})`
-3. Every view is empty: `document.querySelector('[role=tabpanel]:not([inert])').childElementCount` is `0`.
+3. Workspace and History are empty: `document.querySelector('[role=tabpanel]:not([inert])').childElementCount` is `0` with each selected. Now has the capture box and no Entries: `snapshot -i` lists `textbox "What's on your mind?"` and `button "Add" [disabled]`, and `document.querySelectorAll('[role=listitem]').length` is `0`.
 4. This run's lines in `appLog` include `Weft opened <database> (SQLite <version>)` with the instance's own `database` path from `env`, then `Weft showed app://weft/`.
-5. `verify db "PRAGMA schema_version"` prints the instance's `database`, `file.bytes` `0` and `rows` `[{"schema_version":0}]`: a new, empty file.
+5. `verify db "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name"` prints the instance's `database` and `rows` `[{"name":"built_tables"},{"name":"device"},{"name":"entries"},{"name":"entry_threads"},{"name":"events"},{"name":"threads"}]`, and `verify db "SELECT count(*) AS events FROM events"` prints `rows` `[{"events":0}]`: a new log with nothing in it.
 6. `verify doctor` is `ok` with `windowMessages` `[]`.
 
 ## Traps
