@@ -2,6 +2,7 @@ import {
   createEvent,
   formatHlc,
   instantFromMs,
+  localCalendarDay,
   parseHlc,
   tableChanges,
   tableNames,
@@ -29,7 +30,7 @@ import {
   type ThreadListItem,
   type Weft,
 } from "@weft/contracts";
-import type { Database, SqlExecutor } from "./database.ts";
+import type { Database, SqlExecutor, SqlRow } from "./database.ts";
 import { openEventLog } from "./event-log.ts";
 
 export interface InProcessWeftOptions {
@@ -82,11 +83,16 @@ export async function openWeft(options: InProcessWeftOptions): Promise<Weft> {
         await check(database, command);
         const ms = now();
         const hlc = tickHlc(lastHlc, ms);
-        const event = eventFor(
-          command,
-          { id: command.eventId, deviceId, hlc: formatHlc(hlc) },
-          instantFromMs(ms),
-        );
+        const meta = { id: command.eventId, deviceId, hlc: formatHlc(hlc) };
+        const event =
+          command.type === "complete follow-up date"
+            ? completion(
+                meta,
+                command.entryId,
+                (await followUpDateOf(database, command.entryId))!,
+                ms,
+              )
+            : eventFor(command, meta, instantFromMs(ms));
         await log.append([event]);
         lastHlc = hlc;
         notify(event);
@@ -113,7 +119,33 @@ function reportAsUnhandled(error: unknown) {
   void Promise.reject(error);
 }
 
-function eventFor(command: Command, meta: EventMeta, at: Instant): WeftEvent {
+function completion(
+  meta: EventMeta,
+  entryId: EntryId,
+  completed: FollowUpDate,
+  ms: number,
+): WeftEvent {
+  return createEvent(meta, "follow-up date completed", {
+    entryId,
+    completedAt: instantFromMs(ms),
+    completed,
+    next: followUpDateAfter(completed, localCalendarDay(ms)),
+  });
+}
+
+/** Repeats are #10. */
+function followUpDateAfter(
+  _completed: FollowUpDate,
+  _today: CalendarDay,
+): FollowUpDate | null {
+  return null;
+}
+
+function eventFor(
+  command: Exclude<Command, { type: "complete follow-up date" }>,
+  meta: EventMeta,
+  at: Instant,
+): WeftEvent {
   switch (command.type) {
     case "write entry": {
       const { entryId, body, parentEntryId } = command;
@@ -212,6 +244,15 @@ async function check(sql: SqlExecutor, command: Command) {
     case "reopen thread":
       await requireThread(sql, command.threadId);
       return;
+    case "complete follow-up date":
+      await requireEntry(sql, command.entryId);
+      if ((await followUpDateOf(sql, command.entryId)) === null) {
+        throw new WeftError(
+          "not found",
+          `Entry ${command.entryId} has no Follow-up date.`,
+        );
+      }
+      return;
     default:
       await requireEntry(sql, command.entryId);
   }
@@ -268,19 +309,33 @@ async function readEntries(sql: SqlExecutor): Promise<EntryListItem[]> {
     writtenAt: row.written_at as Instant,
     parentEntryId: row.parent_entry_id as EntryId | null,
     putAway: row.put_away === 1,
-    followUpDate:
-      row.follow_up_day === null
-        ? null
-        : ({
-            day: row.follow_up_day as CalendarDay,
-            time: row.follow_up_time as TimeOfDay | null,
-            repeat:
-              row.follow_up_repeat === null
-                ? null
-                : (JSON.parse(String(row.follow_up_repeat)) as Repeat),
-          } satisfies FollowUpDate),
+    followUpDate: followUpDateFromRow(row),
     threadIds: threadIds.get(String(row.entry_id)) ?? [],
   }));
+}
+
+async function followUpDateOf(
+  sql: SqlExecutor,
+  entryId: EntryId,
+): Promise<FollowUpDate | null> {
+  const { rows } = await sql.execute(
+    `SELECT follow_up_day, follow_up_time, follow_up_repeat
+      FROM entries WHERE entry_id = ?`,
+    [entryId],
+  );
+  return rows[0] ? followUpDateFromRow(rows[0]) : null;
+}
+
+function followUpDateFromRow(row: SqlRow): FollowUpDate | null {
+  if (row.follow_up_day === null) return null;
+  return {
+    day: row.follow_up_day as CalendarDay,
+    time: row.follow_up_time as TimeOfDay | null,
+    repeat:
+      row.follow_up_repeat === null
+        ? null
+        : (JSON.parse(String(row.follow_up_repeat)) as Repeat),
+  };
 }
 
 async function readThreads(sql: SqlExecutor): Promise<ThreadListItem[]> {

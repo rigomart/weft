@@ -3,6 +3,7 @@ export * from "./errors.ts";
 export * from "./messages.ts";
 export {
   calendarDay,
+  localCalendarDay,
   makeId,
   timeOfDay,
   type CalendarDay,

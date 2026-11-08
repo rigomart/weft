@@ -1,6 +1,6 @@
 # Now
 
-Now is the tab the app opens on. Under the capture box, Entries with a Follow-up date are grouped by when they come back: Late, Today, Tomorrow, This week (two to six days ahead) and Later. Each group shows its count and holds only when it has Entries. Within a group, Entries go by day, then time, a day with no time first, then by when they were written. Beside the groups, the Loose list holds the top-level Entries on no Thread with no Follow-up date, newest first, under "On no thread, and fine as they are." Put-away Entries show in neither. Late is a fact, not an alarm: the window title stays "Weft", with no count or badge.
+Now is the tab the app opens on. Under the capture box, Entries with a Follow-up date are grouped by when they come back: Late, Today, Tomorrow, This week (two to six days ahead) and Later. Each group shows its count and holds only when it has Entries. Within a group, Entries go by day, then time, a day with no time first, then by when they were written. Beside the groups, the Loose list holds the top-level Entries on no Thread with no Follow-up date, newest first, under "On no thread, and fine as they are." Put-away Entries show in neither. Each card has a ✓ that completes its Follow-up date ([Complete a follow-up date](complete-a-follow-up-date.md)). Late is a fact, not an alarm: the window title stays "Weft", with no count or badge.
 
 "Today" is the Mac's calendar day. Now works it out again at local midnight and when the window comes back.
 

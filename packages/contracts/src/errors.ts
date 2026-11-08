@@ -1,7 +1,7 @@
 export type WeftErrorCode =
   /** The message does not have the shape the contract gives it. */
   | "invalid"
-  /** The command names an Entry or a Thread that does not exist. */
+  /** The command names an Entry, a Thread or a Follow-up date that does not exist. */
   | "not found"
   /** The command would make an Entry or a Thread whose ID is already taken. */
   | "already exists";

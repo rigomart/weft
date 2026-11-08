@@ -65,6 +65,8 @@ export type Command =
       readonly followUpDate: FollowUpDate;
     }
   | EntryCommand<"clear follow-up date">
+  /** Says the Entry's Follow-up date has been dealt with. The Entry stays, as a record. */
+  | EntryCommand<"complete follow-up date">
   | NamedThreadCommand<"start thread">
   | NamedThreadCommand<"rename thread">
   | ThreadCommand<"resolve thread">

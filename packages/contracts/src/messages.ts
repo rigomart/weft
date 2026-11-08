@@ -116,6 +116,7 @@ const command = byType<Command>({
     followUpDate,
   }),
   "clear follow-up date": entryCommand("clear follow-up date"),
+  "complete follow-up date": entryCommand("complete follow-up date"),
   "start thread": named("start thread"),
   "rename thread": named("rename thread"),
   "resolve thread": threadCommand("resolve thread"),

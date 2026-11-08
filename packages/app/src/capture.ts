@@ -1,18 +1,6 @@
-import {
-  makeId,
-  type Command,
-  type FollowUpDate,
-  type Weft,
-} from "@weft/contracts";
+import type { Command, FollowUpDate, Weft } from "@weft/contracts";
 
-type NewId = <Kind extends "event" | "entry">(
-  kind: Kind,
-) => ReturnType<typeof makeId<Kind>>;
-
-const newId: NewId = () =>
-  makeId(Date.now(), (length) =>
-    crypto.getRandomValues(new Uint8Array(length)),
-  );
+import { newId, type NewId } from "./new-id.ts";
 
 interface Commands {
   readonly write: Extract<Command, { type: "write entry" }>;

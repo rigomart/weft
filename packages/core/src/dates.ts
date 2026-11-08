@@ -50,6 +50,15 @@ export function instantFromMs(ms: number): Instant {
   return instant(date.toISOString());
 }
 
+/** The calendar day `ms` falls on in this device's time zone (ADR 0006). */
+export function localCalendarDay(ms: number): CalendarDay {
+  const date = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return calendarDay(
+    `${String(date.getFullYear()).padStart(4, "0")}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+  );
+}
+
 export function instant(value: string): Instant {
   if (!isInstant(value))
     throw new SyntaxError(`Not an instant: ${JSON.stringify(value)}.`);

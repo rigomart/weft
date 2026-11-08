@@ -1,5 +1,5 @@
 import {
-  calendarDay,
+  localCalendarDay,
   type CalendarDay,
   type FollowUpDate,
 } from "@weft/contracts";
@@ -8,10 +8,7 @@ const DAY_MS = 86_400_000;
 
 /** The calendar day `at` falls on in this device's time zone (ADR 0006). */
 export function localDay(at: Date = new Date()): CalendarDay {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return calendarDay(
-    `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`,
-  );
+  return localCalendarDay(at.getTime());
 }
 
 /** How many days `to` is after `from`: negative when it is before. */
