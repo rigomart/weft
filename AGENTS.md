@@ -37,7 +37,7 @@ Two environment variables point a run:
 
 One Weft runs per folder: launching again on the same folder brings the running window forward and exits. Runs on different folders run side by side.
 
-On stdout, a run prints `Weft opened <path to weft.db> (SQLite <version>)`, then `Weft showed <url>` once the window has painted. A second launch on a folder in use prints `Weft is already open on <folder>; showing its window.` If your shell sets `ELECTRON_RUN_AS_NODE` (some editors built on Electron do), unset it before running Electron yourself; the dev script already does.
+On stdout, a run prints `Weft opened <path to weft.db> (SQLite <version>)`, then `Weft showed <url>` once the window has painted. The window's warnings and errors print as `Weft's window <level>: …`, and a window that fails to load stops the run with an error. A second launch on a folder in use prints `Weft is already open on <folder>; showing its window.` If your shell sets `ELECTRON_RUN_AS_NODE` (some editors built on Electron do), unset it before running Electron yourself; the dev script already does.
 
 ## Language and decisions
 

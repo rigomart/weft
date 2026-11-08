@@ -67,10 +67,11 @@ function setUp(launch: Launch) {
   app.on("second-instance", showWindow);
   app.on("window-all-closed", () => app.quit());
   app.on("will-quit", () => database?.client.close());
-  app.whenReady().then(
-    () => start(launch),
-    (error: unknown) => fail("Weft could not start", error),
-  );
+  // A window that never loads stays hidden while holding the lock, so any failure here quits.
+  app
+    .whenReady()
+    .then(() => start(launch))
+    .catch((error: unknown) => fail("Weft could not start", error));
 }
 
 async function start(launch: Launch) {
@@ -103,6 +104,17 @@ async function start(launch: Launch) {
   window.webContents.on("did-fail-load", (_event, code, description, url) => {
     console.error(`Weft could not load ${url}: ${description} (${code})`);
   });
+  // A packaged build has no developer tools, so the window's warnings and errors come here.
+  window.webContents.on(
+    "console-message",
+    ({ level, message, sourceId, lineNumber }) => {
+      if (level === "warning" || level === "error") {
+        console.error(
+          `Weft's window ${level}: ${message} (${sourceId}:${lineNumber})`,
+        );
+      }
+    },
+  );
   window.webContents.on("render-process-gone", (_event, { reason }) => {
     console.error(`Weft's window stopped: ${reason}`);
   });
