@@ -1,0 +1,1048 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vita-next prototype</title>
+<style>
+:root {
+  --bg: #f6f5f2; --surface: #ffffff; --surface-2: #efede8; --ink: #1c1c1e; --ink-2: #54545a; --ink-3: #8c8c92;
+  --line: #e2dfd8; --accent: #2f6ae0; --accent-tint: #e6eefc; --late: #c8414f; --late-tint: #fbe8ea;
+  --paper: #fffdf6; --tl: 46%; --ts: 52%; --tint-l: 93%;
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 14px rgba(0,0,0,.06);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141416; --surface: #1d1d20; --surface-2: #26262a; --ink: #ececee; --ink-2: #b0b0b6; --ink-3: #7c7c84;
+    --line: #2f2f34; --accent: #6d9bff; --accent-tint: #1d2a44; --late: #ff6b78; --late-tint: #3a1d22;
+    --paper: #222226; --tl: 64%; --ts: 50%; --tint-l: 20%;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141416; --surface: #1d1d20; --surface-2: #26262a; --ink: #ececee; --ink-2: #b0b0b6; --ink-3: #7c7c84;
+  --line: #2f2f34; --accent: #6d9bff; --accent-tint: #1d2a44; --late: #ff6b78; --late-tint: #3a1d22;
+  --paper: #222226; --tl: 64%; --ts: 50%; --tint-l: 20%;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; padding-bottom: 56px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+/* header */
+.top { position: sticky; top: 0; z-index: 20; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 10px 16px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.brand { font-weight: 650; letter-spacing: -.01em; white-space: nowrap; }
+.brand small { font-weight: 500; color: var(--ink-3); margin-left: 6px; }
+#capture { display: flex; gap: 6px; flex: 1 1 360px; min-width: 0; }
+#capture input[type=text] { flex: 1; min-width: 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+#capture input[type=date] { padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); max-width: 150px; }
+#capture button, .btn { padding: 7px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.btn.primary, #capture button { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.ghost { background: transparent; }
+.btn.small { padding: 3px 9px; font-size: 12px; border-radius: 8px; }
+.tabs { display: flex; background: var(--surface-2); border-radius: 10px; padding: 3px; }
+.tabs button { border: 0; background: transparent; padding: 5px 14px; border-radius: 8px; color: var(--ink-2); }
+.tabs button[aria-pressed=true] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.today-title { color: var(--ink-2); }
+
+main { padding: 16px; transition: margin-right .2s; }
+@media (min-width: 1100px) { body.panel-open main { margin-right: 400px; } }
+.hint { color: var(--ink-2); font-size: 13px; margin: 0 0 12px; max-width: 900px; }
+.hint b { color: var(--ink); font-weight: 600; }
+
+/* chips */
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px 1px 6px; border-radius: 999px; font-size: 12px; white-space: nowrap;
+  background: hsl(var(--h) 60% var(--tint-l)); color: hsl(var(--h) var(--ts) var(--tl)); border: 1px solid transparent; }
+.chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: hsl(var(--h) var(--ts) var(--tl)); }
+.chip.sug { background: transparent; border: 1px dashed var(--accent); color: var(--accent); }
+.chip.sug::before { background: var(--accent); }
+.chip.loose { --h: 0; background: var(--surface-2); color: var(--ink-3); }
+.chip.loose::before { background: var(--ink-3); }
+
+/* Now */
+.now { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+@media (min-width: 900px) { .now { grid-template-columns: minmax(0, 1fr) 300px; } }
+.group { margin-bottom: 20px; }
+.group h3 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.group.late h3 { color: var(--late); }
+.group.today h3, .group.late h3 { font-size: 15px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.card { position: relative; display: grid; gap: 6px; padding: 10px 12px 9px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; cursor: pointer; text-align: left; }
+.card:hover { border-color: var(--ink-3); }
+.card.late { background: var(--late-tint); border-color: color-mix(in srgb, var(--late) 40%, transparent); }
+.card.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+.card .ctext { padding-right: 26px; }
+.card .foot { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.card .when { margin-left: auto; font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+.card.late .when { color: var(--late); }
+.card .done { position: absolute; top: 7px; right: 7px; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--ink-3); background: transparent; font-size: 11px; line-height: 1; color: transparent; }
+.card .done:hover { border-color: var(--ink); color: var(--ink); }
+.card.rhythm { cursor: default; }
+.side h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin: 0 0 6px; }
+.side p.sub { margin: 0 0 8px; color: var(--ink-3); font-size: 12px; }
+.line-item { display: block; width: 100%; text-align: left; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); margin-bottom: 6px; }
+.line-item:hover { border-color: var(--ink-3); }
+.line-item .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; font-size: 12px; color: var(--ink-3); }
+.badge { font-size: 11px; padding: 0 7px; border-radius: 999px; border: 1px dashed var(--accent); color: var(--accent); }
+
+/* lanes */
+.lanes { display: flex; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); overflow: hidden; }
+.lane-labels { position: relative; flex: 0 0 170px; border-right: 1px solid var(--line); background: var(--surface); z-index: 1; }
+.lane-label { position: absolute; left: 0; right: 0; padding: 8px 10px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; }
+.lane-label:hover, .lane-label.sel { background: var(--surface-2); }
+.lane-label .nm { font-weight: 600; display: flex; gap: 6px; align-items: center; line-height: 1.2; }
+.lane-label .nm i { flex: 0 0 9px; height: 9px; border-radius: 50%; background: hsl(var(--h) var(--ts) var(--tl)); }
+.lane-label .mt { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+.lane-label.resolved { opacity: .55; }
+.lane-scroll { flex: 1; overflow-x: auto; overflow-y: hidden; }
+@media (max-width: 640px) { .lane-labels { flex-basis: 112px; } .lane-label .mt { display: none; } }
+svg text { fill: var(--ink-2); font-size: 11px; }
+.ax { fill: var(--ink-3); font-size: 11px; }
+.grid { stroke: var(--line); }
+.stripe { fill: var(--surface-2); opacity: .45; }
+.todayline { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 2 3; }
+.todaytxt { fill: var(--ink); font-weight: 600; }
+.tl { stroke: hsl(var(--h) var(--ts) var(--tl)); stroke-width: 3; stroke-linecap: round; fill: none; }
+.tl.future { stroke-dasharray: 2 6; stroke-width: 2.5; }
+.tl.resolved { opacity: .45; }
+.dot { fill: hsl(var(--h) var(--ts) var(--tl)); stroke: var(--surface); stroke-width: 2; cursor: pointer; }
+.dot.ask { fill: var(--surface); stroke: hsl(var(--h) var(--ts) var(--tl)); stroke-width: 2.5; }
+.dot.ask.late { stroke: var(--late); fill: var(--late-tint); }
+.dot.loose { fill: var(--ink-3); }
+.dot.loose.ask { fill: var(--surface); stroke: var(--ink-3); }
+.pill { fill: var(--surface); stroke: var(--ink-3); stroke-width: 1.5; cursor: pointer; }
+.elink { stroke: var(--ink-3); stroke-width: 1.5; fill: none; opacity: .7; }
+.sug { stroke: var(--accent); stroke-dasharray: 4 4; stroke-width: 1.5; fill: none; }
+.sugdot { fill: var(--surface); stroke: var(--accent); stroke-dasharray: 2 2; stroke-width: 1.5; }
+.lbl { font-size: 11px; fill: var(--ink-2); pointer-events: none; }
+.lbl.ask { fill: var(--ink); font-weight: 550; }
+.dim { opacity: .18; transition: opacity .15s; }
+.ring { fill: none; stroke: var(--accent); stroke-width: 2; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-3); margin: 10px 2px 0; }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.lg { display: inline-block; width: 11px; height: 11px; border-radius: 50%; }
+
+/* canvas */
+.canvas-wrap { position: relative; border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
+  background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 22px 22px; overflow: hidden; height: calc(100vh - 210px); min-height: 420px; }
+.canvas-wrap svg { width: 100%; height: 100%; touch-action: none; display: block; cursor: grab; }
+.canvas-tools { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.canvas-tools .tip { font-size: 12px; color: var(--ink-3); background: var(--surface); padding: 3px 8px; border-radius: 8px; border: 1px solid var(--line); }
+.cnode { cursor: pointer; }
+.cnode .cardbg { fill: var(--paper); stroke: var(--line); stroke-width: 1.2; }
+.cnode.loose .cardbg { fill: var(--paper); stroke: var(--ink-3); stroke-dasharray: 3 3; }
+.cnode .stripe2 { fill: hsl(var(--h) var(--ts) var(--tl)); }
+.cnode .ctxt { fill: var(--ink); font-size: 12px; }
+.cnode .cwhen { fill: var(--ink-3); font-size: 11px; }
+.cnode .cwhen.late { fill: var(--late); }
+.cnode .tbg { fill: hsl(var(--h) 60% var(--tint-l)); stroke: hsl(var(--h) var(--ts) var(--tl)); stroke-width: 2; }
+.cnode .ttxt { fill: hsl(var(--h) var(--ts) var(--tl)); font-weight: 650; font-size: 13px; }
+.cnode.selected .cardbg, .cnode.selected .tbg { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: none; }
+.cedge { stroke: var(--ink-3); stroke-width: 1.4; opacity: .55; }
+
+/* focus */
+.focus { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .focus { grid-template-columns: 220px minmax(0, 1fr); } }
+.picker h4 { margin: 10px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); }
+.picker button { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 4px 8px; border-radius: 8px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.picker button:hover { background: var(--surface-2); }
+.picker button.on { background: var(--surface-2); color: var(--ink); font-weight: 600; }
+.radial { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.radial svg { width: 100%; height: auto; max-height: 480px; display: block; }
+.rnode { cursor: pointer; }
+.rnode circle.e { fill: hsl(var(--h) var(--ts) var(--tl)); stroke: var(--surface); stroke-width: 2; }
+.rnode circle.e.loose { fill: var(--ink-3); }
+.rnode circle.e.ask { fill: var(--surface); stroke: hsl(var(--h) var(--ts) var(--tl)); stroke-width: 2.5; }
+.rnode rect { fill: hsl(var(--h) 60% var(--tint-l)); stroke: hsl(var(--h) var(--ts) var(--tl)); stroke-width: 2; }
+.rnode .rt { fill: hsl(var(--h) var(--ts) var(--tl)); font-weight: 650; font-size: 12px; }
+.rnode.far { opacity: .45; }
+.redge { stroke: var(--ink-3); stroke-width: 1.3; opacity: .5; }
+
+/* story */
+.story { margin-top: 16px; }
+.story h3 { margin: 0 0 4px; font-size: 16px; }
+.story .sub { color: var(--ink-3); font-size: 12.5px; margin: 0 0 10px; }
+.sline { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); cursor: pointer; }
+.sline:hover { background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+.sline .sd { font-size: 12px; color: var(--ink-3); padding-top: 1px; }
+.sline .st { display: grid; gap: 4px; }
+.sline .sm { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--ink-3); }
+.sline.sug .st > span:first-child { color: var(--ink-2); font-style: italic; }
+.sline.ask .st > span:first-child::before { content: "○ "; color: var(--ink-3); }
+.sline.ask.late .st > span:first-child::before { color: var(--late); }
+.sline.done .st > span:first-child::before { content: "✓ "; color: var(--ink-3); }
+.divider { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink); padding: 10px 0 4px; border-top: 1.5px solid var(--ink); }
+
+/* current (Vita OS today) */
+.cur { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) { .cur { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); } }
+.cur .card { cursor: default; }
+.cur .tnm { color: var(--ink-3); font-size: 12.5px; }
+.dog { font-size: 11px; color: var(--ink-3); }
+.pane { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 14px 16px; }
+.pane h2 { margin: 2px 0 10px; font-size: 18px; }
+.pane h4 { margin: 14px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); }
+.pane ul { margin: 0; padding-left: 18px; }
+.pane li { margin: 3px 0; }
+.pane li small { color: var(--ink-3); }
+.tpick { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.tpick button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 2px 10px; font-size: 12.5px; }
+.tpick button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.missing { margin-top: 16px; padding: 10px 12px; border: 1px dashed var(--accent); border-radius: 10px; background: var(--accent-tint); }
+.missing h4 { margin: 0 0 6px; color: var(--accent); }
+
+/* panel */
+#panel { position: fixed; z-index: 30; background: var(--surface); border-left: 1px solid var(--line); box-shadow: var(--shadow); overflow-y: auto; padding: 14px 16px 24px;
+  right: 0; top: 0; bottom: 0; width: 400px; max-width: 100vw; }
+@media (max-width: 760px) { #panel { top: auto; left: 0; width: auto; height: 72vh; border-left: 0; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; } }
+#panel[hidden] { display: none; }
+#panel .ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: var(--ink-3); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+#panel .x { border: 0; background: transparent; font-size: 20px; line-height: 1; color: var(--ink-3); padding: 2px 6px; }
+#panel textarea, #panel input[type=text] { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); resize: vertical; }
+#panel textarea { min-height: 76px; }
+#panel .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; font-size: 13px; color: var(--ink-2); }
+#panel .sec { margin-top: 16px; }
+#panel .sec > b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin-bottom: 6px; font-weight: 600; }
+#panel .conn { display: flex; gap: 6px; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--line); }
+#panel .conn span.t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#panel .unl { border: 0; background: transparent; color: var(--ink-3); font-size: 16px; padding: 0 4px; }
+#panel select, #panel input[type=date] { padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); max-width: 100%; }
+#panel .sugbox { border: 1px dashed var(--accent); border-radius: 10px; padding: 8px 10px; background: var(--accent-tint); }
+#panel .sugbox .conn { border-bottom-color: color-mix(in srgb, var(--accent) 25%, transparent); }
+#panel .danger { color: var(--late); border-color: color-mix(in srgb, var(--late) 40%, transparent); }
+#panel .story { margin-top: 10px; }
+
+/* switcher */
+#switcher { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: flex; gap: 6px; align-items: center; padding: 8px 12px; background: var(--ink); color: var(--bg); overflow-x: auto; }
+#switcher .lab { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; opacity: .6; white-space: nowrap; }
+#switcher button { border: 1px solid transparent; background: transparent; color: var(--bg); border-radius: 8px; padding: 4px 10px; white-space: nowrap; opacity: .75; }
+#switcher button[aria-pressed=true] { opacity: 1; border-color: color-mix(in srgb, var(--bg) 50%, transparent); }
+#switcher button small { opacity: .65; margin-left: 4px; }
+#switcher .sp { flex: 1; }
+@media (max-width: 760px) { #switcher button small { display: none; } }
+
+#tip { position: fixed; z-index: 50; pointer-events: none; max-width: 280px; background: var(--ink); color: var(--bg); padding: 6px 9px; border-radius: 8px; font-size: 12.5px; box-shadow: var(--shadow); }
+#tip[hidden] { display: none; }
+#tip small { display: block; opacity: .7; margin-top: 2px; }
+#toast { position: fixed; z-index: 50; pointer-events: none; left: 50%; bottom: 70px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 10px; font-size: 13px; box-shadow: var(--shadow); }
+#toast[hidden] { display: none; }
+</style>
+</head>
+<body>
+<header class="top" id="top"></header>
+<main id="main"></main>
+<aside id="panel" hidden></aside>
+<nav id="switcher"></nav>
+<div id="tip" hidden></div>
+<div id="toast" hidden></div>
+
+<script>
+"use strict";
+// ---------- time ----------
+const DAY = 86400000;
+const startOfDay = ts => { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const T0 = startOfDay(Date.now());
+const D = n => { const d = new Date(T0); d.setDate(d.getDate() + n); return d.getTime(); };
+const dayIdx = ts => Math.round((startOfDay(ts) - T0) / DAY);
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const md = ts => { const d = new Date(ts); return MON[d.getMonth()] + " " + d.getDate(); };
+function fmtDay(ts) {
+  const n = dayIdx(ts);
+  if (n === 0) return "Today"; if (n === 1) return "Tomorrow"; if (n === -1) return "Yesterday";
+  if (n > 1 && n < 7) return WD[new Date(ts).getDay()];
+  return md(ts);
+}
+const toInput = ts => { const d = new Date(ts); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const fromInput = v => { if (!v) return null; const [y, m, d] = v.split("-").map(Number); return new Date(y, m - 1, d).getTime(); };
+
+// ---------- scenario ----------
+// Six cases from docs/research/2026-11-08-data-shape-analysis.md, as entries and connections.
+function seed() {
+  const threads = [
+    { id: "t:mum", name: "Mum's blood pressure", hue: 350 },
+    { id: "t:sleep", name: "Sleep", hue: 245 },
+    { id: "t:work", name: "Work stress", hue: 28 },
+    { id: "t:teeth", name: "Teeth", hue: 188 },
+    { id: "t:admin", name: "Admin & insurance", hue: 140 },
+    { id: "t:home", name: "Home", hue: 70, rhythm: { text: "Water the plants", weekday: 0 } },
+    { id: "t:car", name: "Replace the car", hue: 290, resolvedAt: D(-50) },
+  ];
+  const entries = [], links = [];
+  const E = (id, text, at, o = {}) => {
+    const eid = "e:" + id;
+    entries.push({ id: eid, text, at: D(at), ask: o.ask != null ? D(o.ask) : null, doneAt: o.done != null ? D(o.done) : null });
+    (o.on || []).forEach(t => links.push({ a: eid, b: "t:" + t }));
+    (o.sugOn || []).forEach(t => links.push({ a: eid, b: "t:" + t, s: true }));
+    (o.to || []).forEach(x => links.push({ a: eid, b: "e:" + x }));
+    (o.sugTo || []).forEach(x => links.push({ a: eid, b: "e:" + x, s: true }));
+  };
+  // Case 3: a parent's blood pressure
+  E("m1", "Mum's checkup: blood pressure 160/100. Doctor wants a cardiologist.", -95, { on: ["mum"] });
+  E("m1b", "Book the cardiology appointment for Mum", -94, { ask: -88, done: -88, on: ["mum"] });
+  E("m2", "Cardiology visit went fine. New medication, recheck in three months.", -67, { on: ["mum"] });
+  E("m5", "Mum's cardiology follow-up", -67, { ask: 24, on: ["mum"] });
+  E("m3", "Mum said she feels dizzy in the mornings.", -51, { sugOn: ["mum"] });
+  E("m4", "Insurance rejected the cardiology claim. Appeal before the 15th.", -30, { ask: 7, on: ["admin", "mum"] });
+  E("m6", "Bought Mum a home BP monitor. Readings around 135/85.", -20, { on: ["mum"] });
+  // Case 2: the dentist note on three threads
+  E("s1", "Waking up tired even after eight hours.", -80, { on: ["sleep"] });
+  E("w1", "Launch pushed again. Working late most nights.", -60, { on: ["work"] });
+  E("s2", "No screens after 10pm for a week. Slightly better?", -45, { on: ["sleep"] });
+  E("d1", "Dentist: I'm grinding my teeth. Recommends a night guard, asked if I'm stressed.", -25, { on: ["teeth", "sleep"], sugOn: ["work"] });
+  E("d2", "Get the night guard fitted", -25, { ask: 3, on: ["teeth"] });
+  E("w2", "Talked to my manager about workload. Check in again in a month.", -25, { ask: 5, on: ["work"] });
+  E("s3", "Bad week. Awake at 4am twice, mind racing about the launch.", -8, { on: ["sleep", "work"] });
+  // Admin
+  E("a1", "Taxes: one bank statement missing. Request it from the bank.", -40, { ask: -2, on: ["admin"] });
+  // Case 6: the car decision (control)
+  E("c1", "Car needs a new transmission. Fix or replace?", -75, { on: ["car"] });
+  E("c2", "Compared three models. Leaning toward the hybrid.", -66, { on: ["car"] });
+  E("c3", "Test drive went well.", -58, { on: ["car"] });
+  E("c4", "Bought the hybrid.", -50, { on: ["car"] });
+  // Case 4: the leak that turned into a project
+  E("h1", "Call the plumber about the leak under the sink.", -33, { ask: -30, done: -30, on: ["home"] });
+  E("h2", "Plumber: the pipe needs replacing. Quote in two weeks.", -30, { on: ["home"], to: ["h1"] });
+  E("h3", "Chase the plumber's quote", -30, { ask: 0, on: ["home"] });
+  // Case 1: the back pain that became a thing
+  E("b1", "Lower back stiff after the long drive.", -66);
+  E("b2", "Back again. Maybe the desk chair?", -50, { sugTo: ["b1"] });
+  E("b3", "Couldn't sit through the movie, back pain again.", -37, { sugTo: ["b2"] });
+  // Case 5: the good day
+  E("g1", "Hiked with a friend. Felt calm for the first time in weeks. Should do this more.", -18, { sugOn: ["work", "sleep"] });
+  E("l1", "Idea: learn to bake bread on weekends.", -5);
+  return { threads, entries, links, pos: {} };
+}
+
+// ---------- state ----------
+const KEY = "vita-next-proto-v1";
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+if (!S || !S.entries) S = seed();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+const VARIANTS = {
+  current: "Vita OS today",
+  lanes: "Threads as lanes through time",
+  canvas: "Your idea: free canvas, app arranges",
+  focus: "One thing and its neighbours",
+};
+const VK = Object.keys(VARIANTS);
+const params = new URLSearchParams(location.search);
+let variant = VK.includes(params.get("variant")) ? params.get("variant") : "lanes";
+let tab = params.get("tab") === "now" ? "now" : "map";
+let sel = null;
+let curThread = "t:mum";
+let focusId = "t:mum";
+
+// ---------- graph helpers ----------
+const isT = id => id.startsWith("t:");
+const other = (l, id) => l.a === id ? l.b : l.b === id ? l.a : null;
+const linksOf = id => S.links.filter(l => l.a === id || l.b === id);
+const findLink = (a, b) => S.links.find(l => (l.a === a && l.b === b) || (l.a === b && l.b === a));
+const byId = id => isT(id) ? S.threads.find(t => t.id === id) : S.entries.find(e => e.id === id);
+const threadsOf = (eid, sug = false) => linksOf(eid).filter(l => !!l.s === sug).map(l => other(l, eid)).filter(isT);
+const entriesOf = (tid, sug = false) => linksOf(tid).filter(l => !!l.s === sug).map(l => byId(other(l, tid))).filter(Boolean);
+const entryNbrs = (eid, sug = false) => linksOf(eid).filter(l => !!l.s === sug).map(l => other(l, eid)).filter(x => !isT(x));
+const isOpenAsk = e => e.ask != null && e.doneAt == null;
+const isLate = e => isOpenAsk(e) && dayIdx(e.ask) < 0;
+const posTime = e => isOpenAsk(e) ? e.ask : (e.doneAt != null ? e.doneAt : e.at);
+const nameOf = id => { const n = byId(id); return !n ? "?" : isT(id) ? n.name : n.text; };
+const trunc = (s, n) => s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s;
+const h = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const hueOf = tid => (byId(tid) || {}).hue ?? 0;
+const chip = (tid, sug) => `<span class="chip${sug ? " sug" : ""}" style="--h:${hueOf(tid)}">${h(byId(tid).name)}</span>`;
+const lastActivity = t => Math.max(0, ...entriesOf(t.id).map(e => e.doneAt != null ? e.doneAt : e.at));
+
+// ---------- suggestions ----------
+const STOP = new Set("the and for with that this from have has had was were are will just still some very really into over two one three about after before felt feel today tomorrow maybe need needs want should more again week weeks time first went than then them they she her his him our your you can could would told said says get got make made also back".split(" "));
+const SYN = {};
+Object.entries({
+  back: "back spine posture chair sit sitting sat lower stiff",
+  sleep: "sleep slept tired awake insomnia 4am night nights rest bed screens",
+  work: "work launch workload manager deadline stress stressed calm office job",
+  mum: "mum mom mother bp pressure dizzy dizziness cardiology cardiologist medication monitor",
+  teeth: "teeth tooth dentist grinding guard jaw",
+  admin: "insurance claim tax taxes bank appeal statement form",
+  home: "plumber leak pipe sink plants house kitchen",
+}).forEach(([k, words]) => words.split(" ").forEach(w => SYN[w] = "#" + k));
+function toks(text) {
+  const out = new Set();
+  text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).forEach(w => {
+    if (SYN[w]) { out.add(SYN[w]); return; }
+    if (w.length < 3 || STOP.has(w)) return;
+    const st = w.length > 5 ? w.replace(/(ing|ed|es|s)$/, "") : w;
+    out.add(SYN[st] || st);
+  });
+  return out;
+}
+const overlap = (a, b) => { let n = 0; a.forEach(x => { if (b.has(x)) n++; }); return n; };
+function suggest(e) {
+  const tk = toks(e.text); if (!tk.size) return [];
+  const scored = [];
+  S.threads.filter(t => !t.resolvedAt).forEach(t => {
+    const s = overlap(tk, toks(t.name + " " + entriesOf(t.id).map(x => x.text).join(" ")));
+    if (s > 0) scored.push({ id: t.id, s: s + 0.5 });
+  });
+  S.entries.filter(x => x.id !== e.id && threadsOf(x.id).length === 0).forEach(x => {
+    const s = overlap(tk, toks(x.text)); if (s > 0) scored.push({ id: x.id, s });
+  });
+  scored.sort((a, b) => b.s - a.s);
+  return scored.slice(0, 3).map(x => x.id);
+}
+
+// ---------- mutations ----------
+function addEntry(text, ask, pos) {
+  const e = { id: "e:" + Date.now().toString(36), text, at: Date.now(), ask, doneAt: null };
+  S.entries.push(e);
+  const sugs = suggest(e);
+  sugs.forEach(id => S.links.push({ a: e.id, b: id, s: true }));
+  if (pos) S.pos[e.id] = { x: pos.x, y: pos.y, pinned: true };
+  return { e, sugs };
+}
+function link(a, b) { const l = findLink(a, b); if (l) delete l.s; else S.links.push({ a, b }); }
+function unlink(a, b) { S.links = S.links.filter(l => !((l.a === a && l.b === b) || (l.a === b && l.b === a))); }
+function newThread(name) {
+  const used = S.threads.map(t => t.hue);
+  const hues = [210, 320, 100, 260, 10, 160, 50, 230];
+  const t = { id: "t:" + Date.now().toString(36), name, hue: hues.find(x => !used.includes(x)) ?? Math.floor(Math.random() * 360) };
+  S.threads.push(t); return t;
+}
+function looseCluster(eid) {
+  const seen = new Set([eid]), q = [eid];
+  while (q.length) {
+    const cur = q.shift();
+    entryNbrs(cur).forEach(n => { if (!seen.has(n) && threadsOf(n).length === 0) { seen.add(n); q.push(n); } });
+  }
+  return [...seen];
+}
+
+// ---------- render ----------
+const $ = id => document.getElementById(id);
+function render() { renderTop(); renderMain(); renderPanel(); renderSwitcher(); save(); }
+function setUrl() {
+  const p = new URLSearchParams(); p.set("variant", variant); if (tab === "now" && variant !== "current") p.set("tab", "now");
+  try { history.replaceState(null, "", "?" + p.toString()); } catch (e) {}
+}
+
+function renderTop() {
+  if (variant === "current") {
+    $("top").innerHTML = `<div class="brand">Vita OS <small>today</small></div><div class="today-title">The same scenario, stored the way Vita OS stores it: every entry gets one home. Read-only.</div>`;
+    return;
+  }
+  const ae = document.activeElement && document.activeElement.id;
+  const keep = $("cap-text") ? $("cap-text").value : "";
+  $("top").innerHTML = `
+    <div class="brand">vita-next <small>prototype</small></div>
+    <form id="capture" autocomplete="off">
+      <input type="text" id="cap-text" placeholder="What's happening? Enter drops it at now" value="${h(keep)}">
+      <input type="date" id="cap-date" title="Bring it back on (optional)">
+      <button type="submit">Drop</button>
+    </form>
+    <div class="tabs" role="group">
+      <button data-tab="now" aria-pressed="${tab === "now"}">Now</button>
+      <button data-tab="map" aria-pressed="${tab === "map"}">Map</button>
+    </div>`;
+  if (ae === "cap-text") $("cap-text").focus();
+}
+
+function renderMain() {
+  const m = $("main");
+  document.body.classList.toggle("panel-open", !!sel && variant !== "current");
+  if (variant === "current") return renderCurrent(m);
+  if (tab === "now") return renderNow(m);
+  ({ lanes: renderLanes, canvas: renderCanvas, focus: renderFocus })[variant](m);
+}
+
+// ---------- Now (the Dashboard, from entries) ----------
+function nowItems() {
+  const items = S.entries.filter(isOpenAsk).map(e => ({ e, ts: e.ask }));
+  S.threads.filter(t => t.rhythm && !t.resolvedAt).forEach(t => {
+    const add = (t.rhythm.weekday - new Date(T0).getDay() + 7) % 7;
+    items.push({ rhythm: t, ts: D(add) });
+  });
+  return items.sort((a, b) => a.ts - b.ts);
+}
+function groupOf(ts) {
+  const n = dayIdx(ts);
+  if (n < 0) return "Late"; if (n === 0) return "Today"; if (n === 1) return "Tomorrow"; if (n < 7) return "This week"; return "Later";
+}
+function entryCard(e) {
+  const ts = threadsOf(e.id), sg = threadsOf(e.id, true);
+  const late = isLate(e);
+  return `<div class="card${late ? " late" : ""}${sel === e.id ? " sel" : ""}" data-open="${e.id}" tabindex="0">
+    <span class="ctext">${h(e.text)}</span>
+    <span class="foot">${ts.map(t => chip(t)).join("")}${sg.map(t => chip(t, true)).join("")}${!ts.length && !sg.length ? `<span class="chip loose">Loose</span>` : ""}
+      ${e.ask ? `<span class="when">${fmtDay(e.ask)}</span>` : ""}</span>
+    ${isOpenAsk(e) ? `<button class="done" data-done="${e.id}" title="Handled: keeps it as a record">✓</button>` : ""}
+  </div>`;
+}
+function renderNow(m) {
+  const items = nowItems(), groups = {};
+  items.forEach(it => (groups[groupOf(it.ts)] ||= []).push(it));
+  const order = ["Late", "Today", "Tomorrow", "This week", "Later"];
+  const loose = S.entries.filter(e => threadsOf(e.id).length === 0 && !isOpenAsk(e)).sort((a, b) => b.at - a.at);
+  const quiet = S.threads.filter(t => !t.resolvedAt && !entriesOf(t.id).some(isOpenAsk));
+  m.innerHTML = `<p class="hint">The main view stays the Dashboard: <b>what is asking now</b>, from bring-back dates. The difference is in the chips: an entry shows <b>every</b> thread it is on, and dashed chips are suggestions. Handling something keeps it as a record on its threads instead of deleting it.</p>
+  <div class="now"><div>
+    ${order.filter(g => groups[g]).map(g => `<section class="group ${g.toLowerCase().replace(" ", "")}"><h3>${g}<span>${groups[g].length}</span></h3><div class="cards">
+      ${groups[g].map(it => it.e ? entryCard(it.e) : `<div class="card rhythm"><span class="ctext">↻ ${h(it.rhythm.rhythm.text)}</span><span class="foot">${chip(it.rhythm.id)}<span class="when">${fmtDay(it.ts)} · every ${WD[it.rhythm.rhythm.weekday]}</span></span></div>`).join("")}
+    </div></section>`).join("")}
+  </div>
+  <div class="side">
+    <h3>Loose · ${loose.length}</h3>
+    <p class="sub">Captured, not on a thread. Fine as they are; suggestions say where they might belong.</p>
+    ${loose.map(e => { const n = threadsOf(e.id, true).length + entryNbrs(e.id, true).length; return `<button class="line-item" data-open="${e.id}">${h(trunc(e.text, 80))}<span class="meta">${md(e.at)}${n ? `<span class="badge">${n} suggestion${n > 1 ? "s" : ""}</span>` : ""}</span></button>`; }).join("") || `<p class="sub">Nothing loose.</p>`}
+    <h3 style="margin-top:18px">Quiet threads · ${quiet.length}</h3>
+    <p class="sub">Open, nothing asking.</p>
+    ${quiet.map(t => `<button class="line-item" data-open="${t.id}">${chip(t.id)}<span class="meta">last ${md(lastActivity(t) || T0)}</span></button>`).join("")}
+  </div></div>`;
+}
+
+// ---------- Lanes ----------
+let laneScroll = null;
+function laneOrder() {
+  const open = S.threads.filter(t => !t.resolvedAt).sort((a, b) => lastActivity(b) - lastActivity(a));
+  const shared = (a, b) => entriesOf(a.id).filter(e => threadsOf(e.id).includes(b.id)).length;
+  const out = [];
+  while (open.length) {
+    if (!out.length) { out.push(open.shift()); continue; }
+    let bi = 0, bs = -1;
+    open.forEach((t, i) => { const s = out.reduce((acc, p, j) => acc + shared(t, p) / (out.length - j), 0); if (s > bs) { bs = s; bi = i; } });
+    out.push(open.splice(bi, 1)[0]);
+  }
+  return out.concat(S.threads.filter(t => t.resolvedAt));
+}
+function renderLanes(m) {
+  const lanes = laneOrder();
+  const LANE = 78, TOP = 34;
+  const laneY = {}; lanes.forEach((t, i) => laneY[t.id] = TOP + i * LANE + LANE / 2);
+  const looseTop = TOP + lanes.length * LANE;
+  const allTs = S.entries.map(posTime).concat(S.entries.map(e => e.at));
+  const minTs = D(Math.min(-30, ...allTs.map(dayIdx)) - 8);
+  const maxTs = D(Math.max(40, ...allTs.map(dayIdx)) + 12);
+  const avail = (m.clientWidth || innerWidth) - (innerWidth <= 640 ? 112 : 170) - 4;
+  const PX = Math.max(7, avail / ((maxTs - minTs) / DAY));
+  const x = ts => (ts - minTs) / DAY * PX;
+  const W = Math.round(x(maxTs));
+  const loose = S.entries.filter(e => threadsOf(e.id).length === 0).sort((a, b) => posTime(a) - posTime(b));
+  const rows = [looseTop + 26, looseTop + 58, looseTop + 90], rowEnd = [-1e9, -1e9, -1e9];
+  const looseY = {};
+  loose.forEach(e => {
+    const px = x(posTime(e));
+    let r = rowEnd.findIndex(end => end < px - 8);
+    if (r < 0) r = rowEnd.indexOf(Math.min(...rowEnd));
+    looseY[e.id] = rows[r]; rowEnd[r] = px + Math.min(150, trunc(e.text, 24).length * 6);
+  });
+  const H = looseTop + 118;
+  const pts = e => { const ts = threadsOf(e.id).filter(t => laneY[t] != null); return ts.length ? ts.map(t => ({ t, y: laneY[t] })) : [{ t: null, y: looseY[e.id] }]; };
+
+  // selection: what to keep bright
+  let bright = null;
+  if (sel && byId(sel)) {
+    bright = new Set([sel]);
+    linksOf(sel).forEach(l => bright.add(other(l, sel)));
+    if (!isT(sel)) threadsOf(sel).forEach(t => bright.add(t));
+  }
+  const dim = id => bright && !bright.has(id) ? " dim" : "";
+
+  let g = "";
+  lanes.forEach((t, i) => { if (i % 2 === 0) g += `<rect class="stripe" x="0" y="${TOP + i * LANE}" width="${W}" height="${LANE}"/>`; });
+  // month grid
+  const d0 = new Date(minTs); d0.setDate(1); d0.setMonth(d0.getMonth() + 1);
+  for (let d = new Date(d0); d.getTime() < maxTs; d.setMonth(d.getMonth() + 1)) {
+    const xx = x(d.getTime());
+    g += `<line class="grid" x1="${xx}" x2="${xx}" y1="${TOP - 10}" y2="${H}"/><text class="ax" x="${xx + 5}" y="${TOP - 14}">${MON[d.getMonth()]}</text>`;
+  }
+  g += `<line class="grid" x1="0" x2="${W}" y1="${looseTop}" y2="${looseTop}"/>`;
+  // thread lines
+  lanes.forEach(t => {
+    const es = entriesOf(t.id);
+    const y = laneY[t.id];
+    const past = es.filter(e => !isOpenAsk(e) || e.ask <= T0).map(posTime);
+    const fut = es.filter(e => isOpenAsk(e) && e.ask > T0).map(posTime);
+    const start = Math.min(...es.map(posTime), T0);
+    const end = t.resolvedAt || T0;
+    const st = `style="--h:${t.hue}"`, cls = t.resolvedAt ? " resolved" : "";
+    g += `<line class="tl${cls}${dim(t.id)}" ${st} x1="${x(start)}" x2="${x(Math.max(end, start))}" y1="${y}" y2="${y}"/>`;
+    if (!t.resolvedAt) {
+      const nextR = t.rhythm ? D((t.rhythm.weekday - new Date(T0).getDay() + 7) % 7) : 0;
+      const fEnd = Math.max(0, ...fut, nextR);
+      if (fEnd > T0) g += `<line class="tl future${dim(t.id)}" ${st} x1="${x(T0)}" x2="${x(fEnd)}" y1="${y}" y2="${y}"/>`;
+      if (t.rhythm) g += `<g class="${dim(t.id)}" data-tip="↻ ${h(t.rhythm.text)}|every ${WD[t.rhythm.weekday]}, a rhythm, not entries"><circle class="dot ask" style="--h:${t.hue}" cx="${x(nextR)}" cy="${y}" r="5"/><text class="lbl" x="${x(nextR) + 9}" y="${y + 4}">↻ ${h(t.rhythm.text)}</text></g>`;
+    }
+  });
+  // today
+  g += `<line class="todayline" x1="${x(T0)}" x2="${x(T0)}" y1="${TOP - 26}" y2="${H}"/><text class="todaytxt" x="${x(T0) + 5}" y="${TOP - 24}">today</text>`;
+  // entry–entry links
+  S.links.filter(l => !isT(l.a) && !isT(l.b)).forEach(l => {
+    const a = byId(l.a), b = byId(l.b); if (!a || !b) return;
+    const pa = pts(a)[0], pb = pts(b)[0];
+    const x1 = x(posTime(a)), x2 = x(posTime(b));
+    const cy = Math.min(pa.y, pb.y) - 26;
+    g += `<path class="${l.s ? "sug" : "elink"}${bright && !(bright.has(l.a) && bright.has(l.b)) ? " dim" : ""}" d="M${x1},${pa.y} Q${(x1 + x2) / 2},${cy} ${x2},${pb.y}"/>`;
+  });
+  // suggested thread links
+  S.links.filter(l => l.s && (isT(l.a) !== isT(l.b))).forEach(l => {
+    const eid = isT(l.a) ? l.b : l.a, tid = isT(l.a) ? l.a : l.b;
+    const e = byId(eid); if (!e || laneY[tid] == null) return;
+    const p = pts(e)[0], xx = x(posTime(e));
+    const d = bright && !(bright.has(eid) && bright.has(tid)) ? " dim" : "";
+    g += `<line class="sug${d}" x1="${xx}" x2="${xx}" y1="${p.y}" y2="${laneY[tid]}"/><circle class="sugdot${d}" cx="${xx}" cy="${laneY[tid]}" r="5"/>`;
+  });
+  // entries + labels
+  const lblEnd = {};
+  const sorted = [...S.entries].sort((a, b) => posTime(a) - posTime(b));
+  sorted.forEach(e => {
+    const ps = pts(e), xx = x(posTime(e));
+    const ask = isOpenAsk(e), late = isLate(e), loose = ps[0].t === null;
+    const tip = `${h(e.text)}|${ask ? (late ? "late · " : "comes back ") + fmtDay(e.ask) : md(posTime(e))}${loose ? " · loose" : " · " + threadsOf(e.id).map(t => h(byId(t).name)).join(", ")}`;
+    let s = `<g class="${dim(e.id)}" data-open="${e.id}" data-tip="${tip}">`;
+    if (ps.length > 1) {
+      const ys = ps.map(p => p.y), y1 = Math.min(...ys), y2 = Math.max(...ys);
+      s += `<rect class="pill" x="${xx - 8}" y="${y1 - 9}" width="16" height="${y2 - y1 + 18}" rx="8"/>`;
+    }
+    ps.forEach(p => {
+      const c = ["dot", ask ? "ask" : "", late ? "late" : "", loose ? "loose" : ""].join(" ");
+      s += `<circle class="${c}" style="--h:${p.t ? hueOf(p.t) : 0}" cx="${xx}" cy="${p.y}" r="${ps.length > 1 ? 5 : 6}"/>`;
+    });
+    if (sel === e.id) s += `<circle class="ring" cx="${xx}" cy="${Math.min(...ps.map(p => p.y))}" r="10"/>`;
+    // label above (or below) the topmost point
+    const top = ps.reduce((a, b) => a.y < b.y ? a : b);
+    const label = trunc(e.text, 24), wdt = label.length * 5.9;
+    const key = String(top.y);
+    const ends = lblEnd[key] ||= { up: -1e9, dn: -1e9 };
+    let ly = null;
+    if (xx - 4 > ends.up) { ly = top.y - 12 - (ps.length > 1 ? 3 : 0); ends.up = xx + wdt; }
+    else if (xx - 4 > ends.dn) { ly = (ps.length > 1 ? Math.max(...ps.map(p => p.y)) : top.y) + 21; ends.dn = xx + wdt; }
+    if (ly !== null) s += `<text class="lbl${ask ? " ask" : ""}" x="${xx - 4}" y="${ly}">${h(label)}</text>`;
+    s += `</g>`;
+    g += s;
+  });
+
+  const labels = lanes.map(t => {
+    const es = entriesOf(t.id), asks = es.filter(isOpenAsk).length;
+    const meta = t.resolvedAt ? `resolved ${md(t.resolvedAt)}` : `${es.length} entr${es.length === 1 ? "y" : "ies"}${asks ? ` · ${asks} asking` : ""}`;
+    return `<div class="lane-label${t.resolvedAt ? " resolved" : ""}${sel === t.id ? " sel" : ""}${bright && !bright.has(t.id) ? " dim" : ""}" data-open="${t.id}" style="top:${laneY[t.id] - LANE / 2}px;height:${LANE}px;--h:${t.hue}">
+      <span class="nm"><i></i>${h(t.name)}</span><span class="mt">${meta}</span></div>`;
+  }).join("") + `<div class="lane-label" style="top:${looseTop}px;height:118px;cursor:default"><span class="nm">Loose</span><span class="mt">${loose.length} not on a thread yet</span></div>`;
+
+  m.innerHTML = `<p class="hint"><b>Time runs left to right; each thread is a line.</b> An entry on two threads sits across both lanes (the white pills). New captures land in Loose at today. Dashed lines are suggestions.
+    <b>Try:</b> click the three back-pain dots in Loose, accept the suggestions, then "Start a thread". Or drop <i>"Mum dizzy again after lunch"</i> above.</p>
+    <div class="lanes"><div class="lane-labels" style="height:${H}px">${labels}</div>
+    <div class="lane-scroll" id="lane-scroll"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg></div></div>
+    <div class="legend">
+      <span><i class="lg" style="background:var(--ink-2)"></i>something that happened</span>
+      <span><i class="lg" style="border:2px solid var(--ink-2)"></i>asks to come back</span>
+      <span><i class="lg" style="border:2px solid var(--late);background:var(--late-tint)"></i>late</span>
+      <span><i class="lg" style="border:1.5px solid var(--ink-3);border-radius:4px;width:9px;height:16px"></i>on several threads</span>
+      <span><i class="lg" style="border:1.5px dashed var(--accent)"></i>suggested</span>
+    </div>`;
+  const sc = $("lane-scroll");
+  sc.scrollLeft = laneScroll != null ? laneScroll : Math.max(0, x(T0) - sc.clientWidth * 0.68);
+  sc.addEventListener("scroll", () => laneScroll = sc.scrollLeft);
+}
+
+// ---------- Canvas (the owner's idea, as described) ----------
+const view = { tx: 0, ty: 0, k: 1, fitted: false };
+let sim = null;
+function wrap(text, n = 26, max = 3) {
+  const words = text.split(/\s+/), lines = [""];
+  for (const w of words) {
+    const cur = lines[lines.length - 1];
+    if ((cur + " " + w).trim().length > n) { if (lines.length === max) { lines[max - 1] = trunc(cur + " " + w, n); break; } lines.push(w); }
+    else lines[lines.length - 1] = (cur + " " + w).trim();
+  }
+  return lines;
+}
+function nodeSize(id) {
+  if (isT(id)) return { w: byId(id).name.length * 7.6 + 30, h: 34 };
+  const e = byId(id), lines = wrap(e.text).length;
+  return { w: 176, h: 16 + lines * 15 + (e.ask ? 16 : 0) };
+}
+const allNodes = () => S.threads.map(t => t.id).concat(S.entries.map(e => e.id));
+function ensurePos() {
+  allNodes().forEach(id => {
+    if (S.pos[id]) return;
+    const nb = linksOf(id).map(l => S.pos[other(l, id)]).filter(Boolean);
+    if (nb.length) { const ax = nb.reduce((s, p) => s + p.x, 0) / nb.length, ay = nb.reduce((s, p) => s + p.y, 0) / nb.length; S.pos[id] = { x: ax + (Math.random() - .5) * 120, y: ay + (Math.random() - .5) * 120 }; }
+    else { const a = Math.random() * Math.PI * 2, r = 200 + Math.random() * 200; S.pos[id] = { x: Math.cos(a) * r, y: Math.sin(a) * r }; }
+  });
+  Object.keys(S.pos).forEach(id => { if (!byId(id)) delete S.pos[id]; });
+}
+function tick(alpha) {
+  const ids = allNodes(), P = S.pos;
+  ids.forEach(id => { P[id].vx = P[id].vx || 0; P[id].vy = P[id].vy || 0; });
+  for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+    const a = P[ids[i]], b = P[ids[j]];
+    let dx = b.x - a.x, dy = b.y - a.y; const d2 = Math.max(dx * dx + dy * dy, 400), d = Math.sqrt(d2);
+    const f = (isT(ids[i]) || isT(ids[j]) ? 26000 : 14000) / d2 * alpha;
+    dx /= d; dy /= d; a.vx -= dx * f; a.vy -= dy * f; b.vx += dx * f; b.vy += dy * f;
+  }
+  S.links.forEach(l => {
+    const a = P[l.a], b = P[l.b]; if (!a || !b) return;
+    const dx = b.x - a.x, dy = b.y - a.y, d = Math.max(1, Math.hypot(dx, dy));
+    const f = (d - (l.s ? 230 : 160)) * (l.s ? .012 : .05) * alpha;
+    a.vx += dx / d * f; a.vy += dy / d * f; b.vx -= dx / d * f; b.vy -= dy / d * f;
+  });
+  ids.forEach(id => { const p = P[id]; p.vx -= p.x * .004 * alpha; p.vy -= p.y * .004 * alpha; });
+  ids.forEach(id => { const p = P[id]; if (p.pinned) { p.vx = p.vy = 0; return; } p.vx *= .6; p.vy *= .6; p.x += p.vx; p.y += p.vy; });
+  // collisions: cards never overlap
+  for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+    const a = P[ids[i]], b = P[ids[j]], sa = nodeSize(ids[i]), sb = nodeSize(ids[j]);
+    const ox = (sa.w + sb.w) / 2 + 14 - Math.abs(b.x - a.x), oy = (sa.h + sb.h) / 2 + 14 - Math.abs(b.y - a.y);
+    if (ox > 0 && oy > 0) {
+      const wa = a.pinned ? 0 : (b.pinned ? 1 : .5), wb = 1 - wa;
+      if (ox < oy) { const s = Math.sign(b.x - a.x) || 1; a.x -= s * ox * wa; b.x += s * ox * wb; }
+      else { const s = Math.sign(b.y - a.y) || 1; a.y -= s * oy * wa; b.y += s * oy * wb; }
+    }
+  }
+}
+function fitView(svg) {
+  const r = svg.getBoundingClientRect(); if (!r.width) return;
+  const ids = allNodes(); let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
+  ids.forEach(id => { const p = S.pos[id], s = nodeSize(id); x1 = Math.min(x1, p.x - s.w / 2); x2 = Math.max(x2, p.x + s.w / 2); y1 = Math.min(y1, p.y - s.h / 2); y2 = Math.max(y2, p.y + s.h / 2); });
+  const k = Math.min(1.2, (r.width - 40) / (x2 - x1), (r.height - 70) / (y2 - y1));
+  view.k = k; view.tx = r.width / 2 - (x1 + x2) / 2 * k; view.ty = (r.height + 30) / 2 - (y1 + y2) / 2 * k;
+}
+function drawCanvas() {
+  const g = $("cv-g"); if (!g) return;
+  g.setAttribute("transform", `translate(${view.tx},${view.ty}) scale(${view.k})`);
+  let s = "";
+  S.links.forEach(l => { const a = S.pos[l.a], b = S.pos[l.b]; if (a && b) s += `<line class="${l.s ? "sug" : "cedge"}" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`; });
+  allNodes().forEach(id => {
+    const p = S.pos[id], sz = nodeSize(id), n = byId(id);
+    const rot = ((id.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 7) - 3) * .45;
+    if (isT(id)) {
+      s += `<g class="cnode${sel === id ? " selected" : ""}" data-node="${id}" style="--h:${n.hue}${n.resolvedAt ? ";opacity:.5" : ""}" transform="translate(${p.x},${p.y}) rotate(${rot})">
+        <rect class="tbg" x="${-sz.w / 2}" y="${-sz.h / 2}" width="${sz.w}" height="${sz.h}" rx="17"/>
+        <text class="ttxt" text-anchor="middle" y="5">${h(n.name)}</text></g>`;
+    } else {
+      const ts = threadsOf(id), hue = ts.length ? hueOf(ts[0]) : 0, lines = wrap(n.text);
+      s += `<g class="cnode${ts.length ? "" : " loose"}${sel === id ? " selected" : ""}" data-node="${id}" style="--h:${hue}" transform="translate(${p.x},${p.y}) rotate(${rot})">
+        <rect class="cardbg" x="${-sz.w / 2}" y="${-sz.h / 2}" width="${sz.w}" height="${sz.h}" rx="6"/>
+        ${ts.length ? `<rect class="stripe2" x="${-sz.w / 2}" y="${-sz.h / 2 + 6}" width="3" height="${sz.h - 12}" rx="1.5"/>` : ""}
+        ${lines.map((ln, i) => `<text class="ctxt" x="${-sz.w / 2 + 11}" y="${-sz.h / 2 + 20 + i * 15}">${h(ln)}</text>`).join("")}
+        ${n.ask ? `<text class="cwhen${isLate(n) ? " late" : ""}" x="${-sz.w / 2 + 11}" y="${sz.h / 2 - 8}">${isOpenAsk(n) ? "○ " + fmtDay(n.ask) : "✓ handled"}</text>` : ""}</g>`;
+    }
+  });
+  g.innerHTML = s;
+}
+function runSim(frames, animate) {
+  if (sim) cancelAnimationFrame(sim);
+  if (!animate) { for (let i = 0; i < frames; i++) tick(1 - i / frames); return; }
+  let i = 0;
+  const step = () => { tick(Math.max(.05, 1 - i / frames)); drawCanvas(); if (++i < frames) sim = requestAnimationFrame(step); else { sim = null; if ($("cv")) { fitView($("cv")); drawCanvas(); } save(); } };
+  sim = requestAnimationFrame(step);
+}
+function renderCanvas(m) {
+  const fresh = !Object.keys(S.pos).length;
+  ensurePos();
+  if (fresh) runSim(320, false);
+  m.innerHTML = `<p class="hint"><b>Your idea, as described:</b> a workspace where thoughts and things happening go anywhere, you connect them, and the app arranges them. Cards keep a faint colour stripe for their first thread; dashed borders are loose.</p>
+    <div class="canvas-wrap"><svg id="cv"><g id="cv-g"></g></svg>
+    <div class="canvas-tools"><button class="btn small" data-act="arrange">Arrange</button><button class="btn small" data-act="fit">Fit</button>
+    <span class="tip">Drag to move · Shift-click a second card to connect or disconnect · Double-click empty space to add</span></div></div>`;
+  const svg = $("cv");
+  if (!view.fitted || fresh) { fitView(svg); view.fitted = true; }
+  drawCanvas();
+  let drag = null, pan = null;
+  const toWorld = (cx, cy) => { const r = svg.getBoundingClientRect(); return { x: (cx - r.left - view.tx) / view.k, y: (cy - r.top - view.ty) / view.k }; };
+  svg.addEventListener("pointerdown", ev => {
+    const n = ev.target.closest("[data-node]");
+    svg.setPointerCapture(ev.pointerId);
+    if (n) { const id = n.dataset.node, w = toWorld(ev.clientX, ev.clientY); drag = { id, dx: S.pos[id].x - w.x, dy: S.pos[id].y - w.y, sx: ev.clientX, sy: ev.clientY, moved: false, shift: ev.shiftKey }; }
+    else pan = { sx: ev.clientX, sy: ev.clientY, tx: view.tx, ty: view.ty };
+  });
+  svg.addEventListener("pointermove", ev => {
+    if (drag) {
+      if (!drag.moved && Math.hypot(ev.clientX - drag.sx, ev.clientY - drag.sy) < 4) return;
+      drag.moved = true; const w = toWorld(ev.clientX, ev.clientY);
+      Object.assign(S.pos[drag.id], { x: w.x + drag.dx, y: w.y + drag.dy, pinned: true }); drawCanvas();
+    } else if (pan) { view.tx = pan.tx + ev.clientX - pan.sx; view.ty = pan.ty + ev.clientY - pan.sy; drawCanvas(); }
+    else { const n = ev.target.closest("[data-node]"); showTip(n && !isT(n.dataset.node) ? nameOf(n.dataset.node) : null, ev); }
+  });
+  svg.addEventListener("pointerup", () => {
+    if (drag && !drag.moved) {
+      const id = drag.id;
+      if (drag.shift && sel && sel !== id && !(isT(sel) && isT(id))) {
+        if (findLink(sel, id) && !findLink(sel, id).s) { unlink(sel, id); toast("Disconnected"); } else { link(sel, id); toast("Connected"); }
+        renderPanel(); drawCanvas(); save();
+      } else { sel = id; renderPanel(); document.body.classList.add("panel-open"); drawCanvas(); }
+    } else if (drag) save();
+    drag = null; pan = null;
+  });
+  svg.addEventListener("dblclick", ev => {
+    if (ev.target.closest("[data-node]")) return;
+    const text = prompt("What's happening?"); if (!text || !text.trim()) return;
+    const { e, sugs } = addEntry(text.trim(), null, toWorld(ev.clientX, ev.clientY));
+    sel = e.id; toast(sugs.length ? `Dropped, ${sugs.length} suggestion${sugs.length > 1 ? "s" : ""}` : "Dropped");
+    render();
+  });
+  svg.addEventListener("wheel", ev => {
+    ev.preventDefault();
+    const r = svg.getBoundingClientRect(), mx = ev.clientX - r.left, my = ev.clientY - r.top;
+    const k2 = Math.min(2.5, Math.max(.25, view.k * Math.exp(-ev.deltaY * .0015)));
+    view.tx = mx - (mx - view.tx) * k2 / view.k; view.ty = my - (my - view.ty) * k2 / view.k; view.k = k2; drawCanvas();
+  }, { passive: false });
+}
+
+// ---------- Focus ----------
+function storyHtml(id, withAccept = true) {
+  if (isT(id)) {
+    const t = byId(id);
+    const items = entriesOf(id).map(e => ({ e, s: false })).concat(entriesOf(id, true).map(e => ({ e, s: true })));
+    items.sort((a, b) => posTime(a.e) - posTime(b.e));
+    let out = "", dividerDone = false;
+    items.forEach(({ e, s }) => {
+      if (!dividerDone && posTime(e) > T0) { out += `<div class="divider">Today</div>`; dividerDone = true; }
+      const also = threadsOf(e.id).filter(x => x !== id), cls = [s ? "sug" : "", isOpenAsk(e) ? "ask" : "", isLate(e) ? "late" : "", e.ask && e.doneAt ? "done" : ""].join(" ");
+      out += `<div class="sline ${cls}" data-open="${e.id}"><span class="sd">${isOpenAsk(e) ? fmtDay(e.ask) : md(posTime(e))}</span><span class="st"><span>${h(e.text)}</span>
+        ${also.length || s ? `<span class="sm">${also.length ? "also on " + also.map(x => chip(x)).join("") : ""}${s ? `<span class="badge">suggested</span>${withAccept ? `<button class="btn small" data-accept="${e.id}|${id}">Accept</button>` : ""}` : ""}</span>` : ""}</span></div>`;
+    });
+    if (!dividerDone) out += `<div class="divider">Today</div>`;
+    const sharedN = entriesOf(id).filter(e => threadsOf(e.id).length > 1).length;
+    return `<div class="story"><h3>${h(t.name)}${t.resolvedAt ? ` <small style="color:var(--ink-3);font-weight:400">resolved</small>` : ""}</h3>
+      <p class="sub">${entriesOf(id).length} entries, ${sharedN} shared with other threads${entriesOf(id, true).length ? `, ${entriesOf(id, true).length} suggested` : ""}. The story is the thread itself; no log to rebuild.</p>${out}</div>`;
+  }
+  const e = byId(id);
+  const nb = linksOf(id).map(l => ({ n: other(l, id), s: !!l.s })).filter(x => !isT(x.n)).map(x => ({ e: byId(x.n), s: x.s })).filter(x => x.e).sort((a, b) => posTime(a.e) - posTime(b.e));
+  return `<div class="story"><h3>${h(trunc(e.text, 70))}</h3><p class="sub">${md(e.at)} · ${threadsOf(id).map(t => chip(t)).join(" ") || "loose"}</p>
+    ${nb.map(({ e: x, s }) => `<div class="sline${s ? " sug" : ""}" data-open="${x.id}"><span class="sd">${md(posTime(x))}</span><span class="st"><span>${h(x.text)}</span>${s ? `<span class="sm"><span class="badge">suggested</span></span>` : ""}</span></div>`).join("") || `<p class="sub">No connected entries.</p>`}</div>`;
+}
+function renderFocus(m) {
+  if (!byId(focusId)) focusId = "t:mum";
+  const F = focusId;
+  const ring1 = [...new Set(linksOf(F).map(l => other(l, F)))].filter(byId);
+  const sug1 = new Set(linksOf(F).filter(l => l.s).map(l => other(l, F)));
+  const ring2 = [], parent = {};
+  ring1.forEach(r => linksOf(r).forEach(l => { const o = other(l, r); if (o !== F && !ring1.includes(o) && !ring2.includes(o) && byId(o) && ring2.length < 22) { ring2.push(o); parent[o] = r; } }));
+  const W = 920, H = 460, cx = W / 2, cy = H / 2;
+  const P = { [F]: { x: cx, y: cy } };
+  const order1 = [...ring1].sort((a, b) => (isT(a) - isT(b)) || ((byId(a).at || 0) - (byId(b).at || 0)));
+  order1.forEach((id, i) => { const a = -Math.PI / 2 + i / order1.length * Math.PI * 2; P[id] = { x: cx + Math.cos(a) * 235, y: cy + Math.sin(a) * 140, a }; });
+  const byParent = {}; ring2.forEach(id => (byParent[parent[id]] ||= []).push(id));
+  Object.entries(byParent).forEach(([p, kids]) => kids.forEach((id, i) => { const a = P[p].a + (i - (kids.length - 1) / 2) * .22; P[id] = { x: cx + Math.cos(a) * 395, y: cy + Math.sin(a) * 200, a }; }));
+  let g = "";
+  const edge = (a, b, s, far) => { const pa = P[a], pb = P[b]; if (pa && pb) g += `<line class="${s ? "sug" : "redge"}" ${far ? 'opacity=".25"' : ""} x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}"/>`; };
+  ring1.forEach(id => edge(F, id, sug1.has(id)));
+  ring2.forEach(id => { const l = findLink(id, parent[id]); edge(parent[id], id, l && l.s, true); });
+  const node = (id, far, center) => {
+    const p = P[id], n = byId(id);
+    if (isT(id)) { const w = Math.min(n.name.length, 22) * 7 + 22; return `<g class="rnode${far ? " far" : ""}" data-focus="${id}" style="--h:${n.hue}"><rect x="${p.x - w / 2}" y="${p.y - 13}" width="${w}" height="26" rx="13"/><text class="rt" text-anchor="middle" x="${p.x}" y="${p.y + 4}">${h(trunc(n.name, 22))}</text></g>`; }
+    const ts = threadsOf(id), r = center ? 9 : far ? 4.5 : 6;
+    return `<g class="rnode${far ? " far" : ""}" data-focus="${id}" data-tip="${h(n.text)}" style="--h:${ts.length ? hueOf(ts[0]) : 0}">
+      <circle class="e${ts.length ? "" : " loose"}${isOpenAsk(n) ? " ask" : ""}" cx="${p.x}" cy="${p.y}" r="${r}"/>
+      ${far ? "" : `<text x="${p.x}" y="${center ? p.y + 24 : p.y + 18}" text-anchor="middle" style="font-size:${center ? 12.5 : 11}px">${h(trunc(n.text, center ? 48 : 28))}</text>`}</g>`;
+  };
+  ring2.forEach(id => g += node(id, true));
+  ring1.forEach(id => g += node(id, false));
+  g += node(F, false, true);
+  const openT = S.threads.filter(t => !t.resolvedAt), resT = S.threads.filter(t => t.resolvedAt);
+  const recent = [...S.entries].sort((a, b) => b.at - a.at).slice(0, 12);
+  m.innerHTML = `<p class="hint"><b>One thing in the middle, its neighbours around it, its story below.</b> This is the view for coming back to a thread after weeks: it includes entries that live on other threads too. Click any node to move there.</p>
+  <div class="focus">
+    <div class="picker"><h4>Threads</h4>${openT.map(t => `<button class="${F === t.id ? "on" : ""}" data-focus="${t.id}">${chip(t.id)}</button>`).join("")}
+      ${resT.map(t => `<button class="${F === t.id ? "on" : ""}" data-focus="${t.id}" style="opacity:.6">${chip(t.id)}</button>`).join("")}
+      <h4>Recent entries</h4>${recent.map(e => `<button class="${F === e.id ? "on" : ""}" data-focus="${e.id}" title="${h(e.text)}">${h(e.text)}</button>`).join("")}</div>
+    <div><div class="radial"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${g}</svg></div>${storyHtml(F)}</div>
+  </div>`;
+}
+
+// ---------- Current: Vita OS today ----------
+function todayModel() {
+  const T = {}; S.threads.forEach(t => T[t.id] = { tasks: [], notes: [], activity: [] });
+  const standalone = [];
+  S.entries.forEach(e => {
+    const home = threadsOf(e.id)[0];
+    if (!home) { standalone.push(e); return; }
+    const b = T[home];
+    if (isOpenAsk(e)) b.tasks.push(e); else if (e.ask && e.doneAt) b.activity.push(e); else b.notes.push(e);
+  });
+  return { T, standalone };
+}
+function renderCurrent(m) {
+  const { T, standalone } = todayModel();
+  const items = [];
+  Object.entries(T).forEach(([tid, b]) => b.tasks.forEach(e => items.push({ e, tid, ts: e.ask })));
+  standalone.filter(isOpenAsk).forEach(e => items.push({ e, ts: e.ask }));
+  S.threads.filter(t => t.rhythm && !t.resolvedAt).forEach(t => items.push({ rhythm: t, tid: t.id, ts: D((t.rhythm.weekday - new Date(T0).getDay() + 7) % 7) }));
+  items.sort((a, b) => a.ts - b.ts);
+  const groups = {}; items.forEach(it => (groups[groupOf(it.ts)] ||= []).push(it));
+  const nodate = S.threads.filter(t => !t.resolvedAt && !T[t.id].tasks.length && !t.rhythm);
+  const looseNotes = standalone.filter(e => !e.doneAt);
+  const t = byId(curThread), b = T[curThread];
+  const missing = [];
+  S.entries.forEach(e => {
+    const acc = threadsOf(e.id), sg = threadsOf(e.id, true);
+    if ((acc.includes(curThread) && acc[0] !== curThread) || sg.includes(curThread)) missing.push({ e, where: acc[0] ? byId(acc[0]).name : "a loose Standalone Note" });
+  });
+  m.innerHTML = `<p class="hint">Every entry gets <b>one</b> home: its first thread, or nowhere. A dated one becomes a Task, an undated one a Thread Note, a handled one only a line in the Activity Log. Suggestions don't exist.</p>
+  <div class="cur"><div>
+    ${["Late", "Today", "Tomorrow", "This week", "Later"].filter(g => groups[g]).map(g => `<section class="group ${g.toLowerCase().replace(" ", "")}"><h3>${g}</h3><div class="cards">
+      ${groups[g].map(it => it.rhythm
+        ? `<div class="card"><span class="ctext">↻ ${h(it.rhythm.rhythm.text)}</span><span class="tnm">${h(it.rhythm.name)}</span><span class="foot"><span class="when">${fmtDay(it.ts)}</span></span></div>`
+        : `<div class="card${isLate(it.e) ? " late" : ""}"><span class="ctext">${it.tid ? "○ " : ""}${h(it.e.text)}</span>${it.tid ? `<span class="tnm">${h(byId(it.tid).name)}</span>` : `<span class="dog">▱ Note</span>`}<span class="foot"><span class="when">${fmtDay(it.ts)}</span></span></div>`).join("")}
+    </div></section>`).join("")}
+    <section class="group"><h3>No date</h3><div class="cards">${nodate.map(x => `<div class="card"><span class="ctext">${h(x.name)}</span></div>`).join("")}</div></section>
+    <section class="group"><h3>Notes filter · ${looseNotes.length}</h3><div class="cards">${looseNotes.map(e => `<div class="card"><span class="ctext">${h(e.text)}</span><span class="dog">▱ Note · ${md(e.at)}</span></div>`).join("")}</div></section>
+  </div>
+  <div class="pane">
+    <div class="tpick">${S.threads.map(x => `<button class="${x.id === curThread ? "on" : ""}" data-cthread="${x.id}">${h(x.name)}</button>`).join("")}</div>
+    <h2>${h(t.name)}</h2>
+    <h4>Tasks</h4>${b.tasks.length ? `<ul>${b.tasks.map(e => `<li>${h(e.text)} <small>${fmtDay(e.ask)}</small></li>`).join("")}</ul>` : `<p class="sub" style="color:var(--ink-3)">No tasks.</p>`}
+    ${t.rhythm ? `<ul><li>↻ ${h(t.rhythm.text)} <small>every ${WD[t.rhythm.weekday]}</small></li></ul>` : ""}
+    <h4>Notes</h4>${b.notes.length ? `<ul>${[...b.notes].sort((x, y) => y.at - x.at).map(e => `<li>${h(e.text)} <small>${md(e.at)}</small></li>`).join("")}</ul>` : `<p style="color:var(--ink-3)">No notes.</p>`}
+    <h4>Activity</h4><ul>${b.activity.map(e => `<li>Completed "${h(e.text)}" <small>${md(e.doneAt)}</small></li>`).join("")}${t.resolvedAt ? `<li>Resolved <small>${md(t.resolvedAt)}</small></li>` : ""}<li>Started <small>${md(Math.min(...[...b.notes, ...b.tasks, ...b.activity].map(e => e.at), T0))}</small></li></ul>
+    ${missing.length ? `<div class="missing"><h4>Not visible from this thread today</h4><ul>${missing.map(x => `<li>${h(x.e.text)} <small>lives in ${h(x.where)}</small></li>`).join("")}</ul></div>` : ""}
+  </div></div>`;
+}
+
+// ---------- Panel ----------
+function renderPanel() {
+  const p = $("panel");
+  if (!sel || !byId(sel) || variant === "current") { p.hidden = true; document.body.classList.remove("panel-open"); return; }
+  p.hidden = false;
+  if (innerWidth > 760) { p.style.top = $("top").offsetHeight + "px"; p.style.bottom = $("switcher").offsetHeight + "px"; }
+  else { p.style.top = ""; p.style.bottom = $("switcher").offsetHeight + "px"; }
+  if (isT(sel)) {
+    const t = byId(sel);
+    p.innerHTML = `<div class="ph">Thread<button class="x" data-act="close" aria-label="Close">×</button></div>
+      <input type="text" data-act="tname" value="${h(t.name)}">
+      <div class="row">${t.resolvedAt ? `Resolved ${md(t.resolvedAt)} <button class="btn small" data-act="reopen">Reopen</button>` : `Open <button class="btn small" data-act="resolve">Resolve</button>`}
+      ${t.rhythm ? ` · ↻ ${h(t.rhythm.text)}, every ${WD[t.rhythm.weekday]}` : ""}</div>
+      ${storyHtml(sel)}`;
+    return;
+  }
+  const e = byId(sel);
+  const acc = threadsOf(e.id), sgT = threadsOf(e.id, true), accE = entryNbrs(e.id), sgE = entryNbrs(e.id, true);
+  const loose = !acc.length;
+  const cluster = loose ? looseCluster(e.id) : [];
+  p.innerHTML = `<div class="ph">Entry · ${md(e.at)}<button class="x" data-act="close" aria-label="Close">×</button></div>
+    <textarea data-act="text">${h(e.text)}</textarea>
+    <div class="row">${isOpenAsk(e)
+      ? `Comes back <input type="date" data-act="ask" value="${toInput(e.ask)}"> <button class="btn small" data-act="handle">Handled</button> <button class="btn small ghost" data-act="clearAsk">No date</button>`
+      : e.doneAt ? `Handled ${md(e.doneAt)}, kept as a record <button class="btn small ghost" data-act="unhandle">Undo</button>`
+      : `Bring back on <input type="date" data-act="ask" value="">`}</div>
+    ${sgT.length || sgE.length ? `<div class="sec"><b>Suggested</b><div class="sugbox">
+      ${sgT.concat(sgE).map(id => `<div class="conn"><span class="t">${isT(id) ? chip(id, true) : h(trunc(nameOf(id), 46))}</span><span><button class="btn small" data-accept="${e.id}|${id}">Accept</button> <button class="btn small ghost" data-dismiss="${e.id}|${id}">Dismiss</button></span></div>`).join("")}
+    </div></div>` : ""}
+    <div class="sec"><b>On threads</b>
+      ${acc.map(t => `<div class="conn"><span class="t">${chip(t)}</span><button class="unl" data-unlink="${e.id}|${t}" title="Take off this thread">×</button></div>`).join("") || `<p style="margin:0 0 6px;color:var(--ink-3)">Loose. That's fine.</p>`}
+      <select data-act="addThread"><option value="">+ Put on a thread…</option>${S.threads.filter(t => !acc.includes(t.id)).map(t => `<option value="${t.id}">${h(t.name)}</option>`).join("")}<option value="__new">New thread…</option></select>
+    </div>
+    <div class="sec"><b>Connected entries</b>
+      ${accE.map(id => `<div class="conn"><span class="t" data-open="${id}" style="cursor:pointer">${h(trunc(nameOf(id), 50))}</span><button class="unl" data-unlink="${e.id}|${id}" title="Disconnect">×</button></div>`).join("") || `<p style="margin:0 0 6px;color:var(--ink-3)">None.</p>`}
+      <select data-act="addLink"><option value="">+ Connect to an entry…</option>${[...S.entries].filter(x => x.id !== e.id && !accE.includes(x.id)).sort((a, b) => b.at - a.at).map(x => `<option value="${x.id}">${h(trunc(x.text, 60))}</option>`).join("")}</select>
+    </div>
+    ${loose ? `<div class="sec"><button class="btn primary" data-act="startThread">Start a thread${cluster.length > 1 ? ` with these ${cluster.length}` : ""}</button>
+      <p style="color:var(--ink-3);font-size:12px;margin:6px 0 0">${cluster.length > 1 ? "Takes this entry and the loose entries connected to it. Nothing is converted; they just go on the new line." : "Names a new line with this entry on it. Connect related loose entries first to bring them along."}</p></div>` : ""}
+    <div class="sec"><button class="btn small danger" data-act="delete">Delete entry</button></div>`;
+}
+
+// ---------- switcher, tip, toast ----------
+function renderSwitcher() {
+  $("switcher").innerHTML = `<span class="lab">Variant</span>${VK.map((k, i) => `<button data-variant="${k}" aria-pressed="${variant === k}">${i + 1} ${k}<small>${VARIANTS[k]}</small></button>`).join("")}<span class="sp"></span><button data-act="reset" title="Restore the scenario">Reset</button>`;
+}
+function showTip(text, ev) {
+  const t = $("tip");
+  if (!text) { t.hidden = true; return; }
+  const [a, b] = text.split("|");
+  t.innerHTML = h(a) + (b ? `<small>${h(b)}</small>` : "");
+  t.hidden = false;
+  const x = Math.min(ev.clientX + 14, innerWidth - t.offsetWidth - 8), y = Math.min(ev.clientY + 14, innerHeight - t.offsetHeight - 60);
+  t.style.left = x + "px"; t.style.top = y + "px";
+}
+let toastT;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 1800); }
+
+// ---------- events ----------
+document.addEventListener("mousemove", ev => {
+  if (ev.target.closest && ev.target.closest("#cv")) return;
+  const el = ev.target.closest && ev.target.closest("[data-tip]");
+  showTip(el ? el.getAttribute("data-tip") : null, ev);
+});
+document.addEventListener("submit", ev => {
+  if (ev.target.id !== "capture") return;
+  ev.preventDefault();
+  const text = $("cap-text").value.trim(); if (!text) return;
+  const { e, sugs } = addEntry(text, fromInput($("cap-date").value));
+  $("cap-text").value = "";
+  sel = e.id;
+  toast(sugs.length ? `Dropped at now. ${sugs.length} suggested connection${sugs.length > 1 ? "s" : ""}.` : "Dropped at now. Loose, no suggestions.");
+  render();
+});
+document.addEventListener("click", ev => {
+  const el = ev.target.closest("[data-act],[data-done],[data-accept],[data-dismiss],[data-unlink],[data-variant],[data-tab],[data-cthread],[data-focus],[data-open]");
+  if (!el || el.closest("#cv")) return;
+  const d = el.dataset;
+  if (d.variant) { variant = d.variant; sel = null; laneScroll = null; setUrl(); return render(); }
+  if (d.tab) { tab = d.tab; setUrl(); return render(); }
+  if (d.cthread) { curThread = d.cthread; return renderMain(); }
+  if (d.focus) { focusId = d.focus; sel = d.focus; return render(); }
+  if (d.done) { const e = byId(d.done); e.doneAt = T0; toast("Handled. It stays on its threads as a record."); return render(); }
+  if (d.accept) { const [a, b] = d.accept.split("|"); link(a, b); return render(); }
+  if (d.dismiss) { const [a, b] = d.dismiss.split("|"); unlink(a, b); return render(); }
+  if (d.unlink) { const [a, b] = d.unlink.split("|"); unlink(a, b); return render(); }
+  if (d.act) {
+    const e = sel && byId(sel);
+    switch (d.act) {
+      case "close": sel = null; return render();
+      case "reset": if (confirm("Restore the original scenario? Your changes in the prototype are lost.")) { S = seed(); sel = null; view.fitted = false; laneScroll = null; render(); } return;
+      case "arrange": Object.values(S.pos).forEach(p => p.pinned = false); runSim(220, true); return;
+      case "fit": fitView($("cv")); drawCanvas(); return;
+      case "handle": e.doneAt = T0; return render();
+      case "unhandle": e.doneAt = null; return render();
+      case "clearAsk": e.ask = null; e.doneAt = null; return render();
+      case "resolve": e.resolvedAt = T0; return render();
+      case "reopen": delete e.resolvedAt; return render();
+      case "delete": if (confirm("Delete this entry?")) { S.entries = S.entries.filter(x => x.id !== sel); S.links = S.links.filter(l => l.a !== sel && l.b !== sel); delete S.pos[sel]; sel = null; render(); } return;
+      case "startThread": {
+        const ids = looseCluster(sel);
+        const name = prompt("Name the thread", ""); if (!name || !name.trim()) return;
+        const t = newThread(name.trim());
+        ids.forEach(id => link(id, t.id));
+        if (S.pos[sel]) S.pos[t.id] = { x: S.pos[sel].x, y: S.pos[sel].y - 90 };
+        sel = t.id; focusId = t.id; toast(`"${t.name}" started with ${ids.length} entr${ids.length > 1 ? "ies" : "y"}`);
+        return render();
+      }
+    }
+    return;
+  }
+  if (d.open) { sel = d.open; if (variant === "focus") focusId = d.open; return render(); }
+});
+document.addEventListener("change", ev => {
+  const el = ev.target, act = el.dataset && el.dataset.act; if (!act || !sel) return;
+  const e = byId(sel);
+  if (act === "ask") { e.ask = fromInput(el.value); e.doneAt = null; return render(); }
+  if (act === "addThread" && el.value) {
+    let tid = el.value;
+    if (tid === "__new") { const name = prompt("Name the thread"); if (!name || !name.trim()) return render(); tid = newThread(name.trim()).id; }
+    link(sel, tid); return render();
+  }
+  if (act === "addLink" && el.value) { link(sel, el.value); return render(); }
+});
+document.addEventListener("input", ev => {
+  const el = ev.target, act = el.dataset && el.dataset.act; if (!sel) return;
+  if (act === "text") { byId(sel).text = el.value; renderMain(); save(); }
+  if (act === "tname") { byId(sel).name = el.value; renderMain(); save(); }
+});
+document.addEventListener("keydown", ev => {
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if (ev.key === "Escape") { if (typing) document.activeElement.blur(); sel = null; return render(); }
+  if (typing) return;
+  if (ev.key === "[" || ev.key === "]") { const i = VK.indexOf(variant); variant = VK[(i + (ev.key === "]" ? 1 : VK.length - 1)) % VK.length]; sel = null; laneScroll = null; setUrl(); render(); }
+  if (/^[1-4]$/.test(ev.key)) { variant = VK[+ev.key - 1]; sel = null; laneScroll = null; setUrl(); render(); }
+  if (ev.key === "Enter" && document.activeElement.dataset && document.activeElement.dataset.open) document.activeElement.click();
+});
+addEventListener("resize", () => { if (variant === "canvas" && tab === "map") { fitView($("cv")); drawCanvas(); } });
+
+render();
+</script>
+</body>
+</html>
