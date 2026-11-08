@@ -25,3 +25,10 @@ Round 2 varies only the **Workspace** (`?tab=work&variant=…`, `[` and `]` step
 - `desk`: loose cards on a desk, threads as trays, keyboard sorting.
 
 Every workspace shares one rule: dragging a card moves it, and holding ⌥ while dropping also keeps it where it was. Dropping a card on another loose card starts a group.
+
+Round 3 settles the Workspace as **islands** and varies only how a chain card reads (`?variant=stack|latest`):
+
+- An entry can follow from one earlier entry ("what happened next"). Chains are made by handling an ask, adding an update, or pulling part of an entry out; never by drawing lines. A chain is one card and belongs to its first entry's threads.
+- An entry on several threads shows in full in the first one and as a one-line ↗ reference in the others.
+- Free-form links between entries are gone; only suggestions pair loose entries, and accepting one groups them.
+- Columns, desk and the free canvas are in the round 2 commit.

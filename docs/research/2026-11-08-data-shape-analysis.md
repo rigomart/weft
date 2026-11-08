@@ -98,3 +98,21 @@ A self-contained "Replace the car" Thread (comparisons, a test drive, resolved),
 - Do Areas survive, or are they simply long-lived Threads?
 - What does a suggestion engine need to be useful: words, people, places, time proximity?
 - What carries over from Vita OS unchanged: soft dates, colour belonging to time, missed repeats collapsing, the Thesis as a Filter.
+
+## Addendum: relationships between entries
+
+Asked after the second prototype round: besides belonging to threads, do entries connect to each other in real use?
+
+| Case | Relationship | Verdict |
+| --- | --- | --- |
+| Insurance claim: rejected, called, sent form, approved | Each answers the one before | Real and common: a chain |
+| Plumber: call, visit, quote, fixed | The outcome of an ask | Real; Vita OS already has it as a completion note |
+| Cardiology visit note with one line that is an ask | A piece pulled out of an entry | Real: a split, which also makes a chain |
+| Job search, one story per company | Looks like sub-threads | Covered by chains inside one thread |
+| "This reminds me of that" | Free association | Real as a thought, never maintained by hand; leave it to suggestions |
+
+So the model keeps two relationships: an entry is **on** any number of threads, and an entry may **follow from** one earlier entry. Chains are created by actions (handling an ask, adding an update, splitting), and a chain belongs to its first entry's threads.
+
+A chain also solves most of the duplication in a grouped view: a chain is one card. An entry on several threads shows in full in the first and as a one-line reference elsewhere.
+
+**Open:** when a thread holds a single story (the car decision), its entries are already a chain in all but name. Whether to make every entry in such a thread a reply, or leave chains for threads that hold several stories, is unsettled.
