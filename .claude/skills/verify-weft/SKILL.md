@@ -19,7 +19,7 @@ Pick an instance name for your task (lowercase letters, digits and dashes, such 
 
 Drive only an instance you started with `verify up`. Never drive or open the owner's Weft or its data folder (`~/Library/Application Support/Weft`), and never run the packaged app without `WEFT_USER_DATA`, since that opens the owner's data. Never connect to a debugging port that `up` or `env` did not print.
 
-`up` builds from the working tree. It reuses a running instance only if no file has changed since. Otherwise it quits that instance, rebuilds and relaunches it on the same data folder, and prints `"restarted"`. Run `up` again after every code change, before you check anything. Switching branches is different: `up` refuses an instance started on another branch and prints the `down --purge` and `up` to run.
+`up` builds from the working tree. It reuses a running instance only if no file has changed since and its window and debugging port still answer. Otherwise it quits that instance, rebuilds and relaunches it on the same data folder, and prints `"restarted"` with the reason. Run `up` again after every code change, before you check anything. Switching branches is different: `up` refuses an instance whose data was made on another branch, running or not, and prints the `down --purge` and `up` to run. It also refuses an instance folder that is a link to anywhere else.
 
 ## Users and test data
 

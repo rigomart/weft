@@ -63,7 +63,7 @@ export function instancePaths(name: string) {
   return {
     dir,
     state: join(dir, "state.json"),
-    runId: join(dir, "run-id"),
+    dataOwner: join(dir, "data-owner.json"),
     dataDir,
     database: join(dataDir, "weft.db"),
     logsDir,
@@ -102,20 +102,56 @@ export function requireState(name: string): State {
 }
 
 /**
- * Names the instance's evidence folder. It lasts as long as the instance's data, so the screenshots
- * from before and after a relaunch land in one folder; `down --purge` starts a new one.
+ * What the data folder belongs to, kept until `down --purge`. `runId` names the evidence folder, so
+ * the screenshots from before and after a relaunch land in one folder; `branch` is the branch the data
+ * was made on, checked by `up` even when the instance is not running.
  */
-export function runId(name: string): string {
-  const path = instancePaths(name).runId;
-  if (existsSync(path)) return readFileSync(path, "utf8").trim();
-  const id = new Date().toISOString().replace(/[:.]/g, "-");
+export type DataOwner = { runId: string; branch: string };
+
+export function loadDataOwner(name: string): DataOwner | undefined {
+  const path = instancePaths(name).dataOwner;
+  return existsSync(path)
+    ? (JSON.parse(readFileSync(path, "utf8")) as DataOwner)
+    : undefined;
+}
+
+export function dataOwner(name: string): DataOwner {
+  const existing = loadDataOwner(name);
+  if (existing) return existing;
+  const owner = {
+    runId: new Date().toISOString().replace(/[:.]/g, "-"),
+    branch: currentBranch(),
+  };
   mkdirSync(instancePaths(name).dir, { recursive: true });
-  writeFileSync(path, id);
-  return id;
+  writeFileSync(
+    instancePaths(name).dataOwner,
+    `${JSON.stringify(owner, null, 2)}\n`,
+  );
+  return owner;
 }
 
 export function evidenceDir(name: string): string {
-  return join(instancePaths(name).evidenceRoot, runId(name));
+  return join(instancePaths(name).evidenceRoot, dataOwner(name).runId);
+}
+
+/**
+ * Refuses an instance folder that resolves anywhere but its own place under `.verify`, such as a
+ * data folder symlinked to the owner's.
+ */
+export function checkInsideVerify(name: string): void {
+  const { dir, dataDir } = instancePaths(name);
+  const expected = join(realpathSync(ROOT), ".verify", "instances", name);
+  for (const [path, want] of [
+    [dir, expected],
+    [dataDir, join(expected, "data")],
+  ] as const) {
+    if (existsSync(path) && realpathSync(path) !== want) {
+      throw new VerifyError(
+        `${path} resolves to ${realpathSync(path)}, outside this instance's folder`,
+        `remove the link and run up again; verify only opens folders under ${join(ROOT, ".verify")}`,
+      );
+    }
+  }
 }
 
 // agent-browser sessions are machine-wide but instances belong to one checkout, so the session names both.

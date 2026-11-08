@@ -1,8 +1,6 @@
 /** What one run of the desktop host printed, read from its lines in `app.log` (AGENTS.md lists them). */
 export type LaunchLog = {
-  /** The database file it opened. */
   opened?: string;
-  /** The address the window painted. */
   showed?: string;
   /** Another Weft already held the data folder, so this one exited. */
   alreadyOpen: boolean;

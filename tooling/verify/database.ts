@@ -1,9 +1,14 @@
 import { Database } from "bun:sqlite";
 import { existsSync, statSync } from "node:fs";
 
-import { instancePaths, verifyCommand, VerifyError } from "./instance.ts";
+import {
+  checkInsideVerify,
+  instancePaths,
+  verifyCommand,
+  VerifyError,
+} from "./instance.ts";
 
-/** One statement; a trailing semicolon is fine. Writes fail anyway, since the file opens read-only. */
+/** One statement; a trailing semicolon is fine. */
 export function checkQuery(sql: string): string {
   const statement = sql.trim().replace(/;\s*$/, "");
   if (!statement || statement.includes(";")) {
@@ -27,6 +32,7 @@ export function checkQuery(sql: string): string {
  */
 export function queryDatabase(name: string, sql: string) {
   const statement = checkQuery(sql);
+  checkInsideVerify(name);
   const { database } = instancePaths(name);
   if (!existsSync(database)) {
     throw new VerifyError(

@@ -18,12 +18,14 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { readLaunchLog } from "./launch-log.ts";
 import {
   browserSession,
+  checkInsideVerify,
   clearState,
   currentBranch,
   currentSha,
   DESKTOP_DIR,
   evidenceDir,
   instancePaths,
+  loadDataOwner,
   loadState,
   requireState,
   run,
@@ -43,7 +45,6 @@ const LOCK_WAIT_MS = 300_000;
 const READY_TIMEOUT_MS = 60_000;
 const QUIT_TIMEOUT_MS = 10_000;
 
-/** What `up` and `down` throw after SIGINT or SIGTERM. */
 export class Interrupted extends VerifyError {
   constructor(readonly signal: NodeJS.Signals) {
     super(
@@ -275,10 +276,12 @@ export function up(name: string, options: UpOptions) {
 
 async function upLocked(name: string, options: UpOptions, abort: AbortSignal) {
   const build: Build = options.packaged ? "packaged" : "unpackaged";
+  checkInsideVerify(name);
   const existing = loadState(name);
-  if (existing && existing.branch !== currentBranch()) {
+  const dataBranch = loadDataOwner(name)?.branch ?? existing?.branch;
+  if (dataBranch !== undefined && dataBranch !== currentBranch()) {
     throw new VerifyError(
-      `instance "${name}" was started on branch ${existing.branch}, and its data may not fit ${currentBranch()}`,
+      `instance "${name}" holds data made on branch ${dataBranch}, which may not fit ${currentBranch()}`,
       `run: ${verifyCommand(name, "down --purge")} && ${verifyCommand(name, `up${options.packaged ? " --packaged" : ""}`)}`,
     );
   }
@@ -288,14 +291,19 @@ async function upLocked(name: string, options: UpOptions, abort: AbortSignal) {
       `quit it first, keeping its data: ${verifyCommand(name, "down")}`,
     );
   }
-  let restarted = false;
+  let restarted: string | undefined;
   if (existing) {
-    if (alive(existing) && runLog(name, existing).showed) {
+    if (alive(existing)) {
       // The window shows the build from `up`, so a code change needs a new build.
-      if (existing.build === "packaged" || existing.treeHash === treeHash()) {
+      const current =
+        existing.build === "packaged" || existing.treeHash === treeHash();
+      if (!(await stillReady(name, existing))) {
+        restarted = "the running instance was no longer ready";
+      } else if (!current) {
+        restarted = "the working tree changed since up";
+      } else {
         return { ok: true, reused: true, ...publicEnv(name, existing) };
       }
-      restarted = true;
     }
     await quit(existing);
     clearState(name);
@@ -304,9 +312,20 @@ async function upLocked(name: string, options: UpOptions, abort: AbortSignal) {
   return {
     ok: true,
     reused: false,
-    ...(restarted ? { restarted: "the working tree changed since up" } : {}),
+    ...(restarted ? { restarted } : {}),
     ...publicEnv(name, state),
   };
+}
+
+/** The same test as the first readiness check, rerun on a running instance before it is reused. */
+async function stillReady(name: string, state: State): Promise<boolean> {
+  const log = runLog(name, state);
+  if (!log.showed || log.opened !== instancePaths(name).database) return false;
+  if (state.build === "packaged") return true;
+  return (
+    boundDebugPort(name) === state.requestedDebugPort &&
+    (await debugPortAnswers(state.requestedDebugPort))
+  );
 }
 
 async function start(
@@ -448,7 +467,7 @@ export async function doctor(name: string) {
     windowShown: log.showed !== undefined,
     openedInstanceDatabase: log.opened === paths.database,
     databaseExists: existsSync(paths.database),
-    // A packaged build refuses the port, which is what it should do.
+    // A packaged build ignores the debugging port (AGENTS.md).
     ...(state.build === "unpackaged"
       ? {
           debugPortAnswers:
@@ -510,8 +529,9 @@ export function down(name: string, options: DownOptions) {
     const stopped = state ? await quit(state) : "not running";
     clearState(name);
     if (options.purge) {
+      checkInsideVerify(name);
       rmSync(paths.dataDir, { recursive: true, force: true });
-      rmSync(paths.runId, { force: true });
+      rmSync(paths.dataOwner, { force: true });
     }
     return {
       ok: true,
