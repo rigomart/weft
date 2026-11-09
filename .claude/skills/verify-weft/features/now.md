@@ -33,7 +33,7 @@ Read Now with this `eval`. It returns each section of the open view as `[name, c
 ## Not covered
 
 - Crossing midnight with the window open, which needs the Mac's clock moved. `useToday` in `packages/app/src/now.tsx` handles it.
-- Updates, which nothing in the window can make yet (#14). `packages/app/src/glance.test.ts` covers them. Putting an Entry away is in [The entry panel](entry-panel.md); Thread chips and Quiet threads are in [Threads](threads.md).
+- Updates on Now are in [Updates](updates.md). Putting an Entry away is in [The entry panel](entry-panel.md); Thread chips and Quiet threads are in [Threads](threads.md).
 
 ## Traps
 

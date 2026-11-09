@@ -42,7 +42,7 @@ Read Now with the `eval` in [Now](now.md) (names only are enough here), and the 
 
 ## Not covered
 
-- An Entry's Updates, which nothing in the window can add yet (#14). The contract suite covers how a deleted Entry's Updates are listed.
+- Updates, in [Updates](updates.md). The contract suite covers how a deleted Entry's Updates are listed.
 - A refusal or failure while saving, which the window cannot cause. The panel then shows `Weft refused this change: …` or `Weft couldn't save this change: …`.
 
 ## Traps

@@ -20,7 +20,11 @@ export const views = [
 ] as const;
 
 type Open =
-  | { readonly kind: "entry"; readonly entryId: EntryId }
+  | {
+      readonly kind: "entry";
+      readonly entryId: EntryId;
+      readonly asking?: boolean;
+    }
   | { readonly kind: "thread"; readonly threadId: ThreadId };
 
 export function App({ weft }: { weft: Weft }) {
@@ -37,6 +41,7 @@ export function App({ weft }: { weft: Weft }) {
     open?.kind === "thread"
       ? threads.find((thread) => thread.threadId === open.threadId)
       : undefined;
+  const onOpen = (entryId: EntryId) => setOpen({ kind: "entry", entryId });
   const onOpenThread = (thread: ThreadListItem) =>
     setOpen({ kind: "thread", threadId: thread.threadId });
 
@@ -62,7 +67,10 @@ export function App({ weft }: { weft: Weft }) {
             listFailure={failure ?? threadsFailure}
             today={today}
             openId={openEntry?.entryId ?? openThread?.threadId ?? null}
-            onOpen={(entryId) => setOpen({ kind: "entry", entryId })}
+            onOpen={onOpen}
+            onCompleted={(entryId) =>
+              setOpen({ kind: "entry", entryId, asking: true })
+            }
             onOpenThread={onOpenThread}
           />
         </TabsContent>
@@ -74,9 +82,15 @@ export function App({ weft }: { weft: Weft }) {
           key={openEntry.entryId}
           weft={weft}
           entry={openEntry}
+          entries={entries}
           threads={threads}
           today={today}
+          asking={open?.kind === "entry" && open.asking === true}
+          onAsking={(asking) =>
+            setOpen({ kind: "entry", entryId: openEntry.entryId, asking })
+          }
           onClose={() => setOpen(null)}
+          onOpen={onOpen}
           onOpenThread={onOpenThread}
         />
       )}

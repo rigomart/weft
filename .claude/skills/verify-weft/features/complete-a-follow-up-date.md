@@ -1,6 +1,6 @@
 # Complete a follow-up date
 
-Each row on [Now](now.md) starts with a ✓ button, named `Complete "<body>"`, with the tooltip "Complete". Pressing it runs "complete follow-up date": the store writes one "follow-up date completed" event with the Follow-up date that was dealt with (`completed`), when (`completedAt`, an instant), and `next`, the Follow-up date the Entry has afterwards. Without a Repeat, `next` is `null`: the Entry's Follow-up date clears and the Entry stays. It leaves its group, whose count drops by one, and a group left empty goes. With no Thread and no Follow-up date left, a top-level Entry is Loose, so it shows at the Loose list, by when it was written.
+Each row on [Now](now.md) starts with a ✓ button, named `Complete "<body>"`, with the tooltip "Complete". Pressing it runs "complete follow-up date", then opens the Entry in [the entry panel](entry-panel.md) asking "What happened?" ([Updates](updates.md)): the store writes one "follow-up date completed" event with the Follow-up date that was dealt with (`completed`), when (`completedAt`, an instant), and `next`, the Follow-up date the Entry has afterwards. Without a Repeat, `next` is `null`: the Entry's Follow-up date clears and the Entry stays. It leaves its group, whose count drops by one, and a group left empty goes. With no Thread and no Follow-up date left, a top-level Entry is Loose, so it shows at the Loose list, by when it was written.
 
 ## Entry points and variants
 
@@ -22,7 +22,7 @@ Read Now with the `eval` in [Now](now.md). Each button's ref is in `snapshot -i`
 2. Click ✓ on "Book the checkup", then wait until Loose has two items. Today is `["Today","1",["Water the plants | … "]]`, and Loose lists "Book the checkup" with its written day. `alerts` (`document.querySelectorAll('[role=alert]').length`) is `0`, and `document.title` is `"Weft"`.
 3. `verify db "SELECT type, content FROM events ORDER BY hlc"`: the last row is `follow-up date completed` with that `entryId`, `completedAt` an instant within the last minute, `completed` `{"day":"<today>","time":"09:30","repeat":null}` and `next` `null`. `verify db "SELECT follow_up_day, follow_up_time, put_away FROM entries WHERE body = 'Book the checkup'"` prints `null`, `null`, `0`.
 4. After `verify down` and `verify up`, the `eval` gives the same as in check 2, and `verify db "SELECT count(*) AS n FROM events WHERE type = 'follow-up date completed'"` prints `1`.
-5. Focus ✓ on "Call about the claim" and press Enter. The Late section is gone (`document.querySelector('#now-late')` is `null`), and Loose holds three items. Focus (`document.activeElement.getAttribute('aria-label')`) moves to the ✓ that took the row's place, or the last one when it was the last, and to `"What's on your mind?"` when no ✓ is left.
+5. Focus ✓ on "Call about the claim" and press Enter. The Late section is gone (`document.querySelector('#now-late')` is `null`), and Loose holds three items. The entry panel opens on it asking "What happened?" ([Updates](updates.md)), and focus (`document.activeElement.getAttribute('aria-label')`) is on that box, `"What happened?"`.
 6. `verify doctor` is `ok` with `windowMessages` `[]`, and `grep -c "^Weft failed" <appLog>` prints `0`.
 
 ## Not covered
