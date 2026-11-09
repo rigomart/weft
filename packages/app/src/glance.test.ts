@@ -38,6 +38,7 @@ function entry(
           repeat: null,
         }
       : null,
+    completed: null,
     threadIds: options.threadIds ?? [],
   };
 }

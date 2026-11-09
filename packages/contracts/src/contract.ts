@@ -56,6 +56,7 @@ export type Command =
   | EntryCommand<"delete entry">
   | EntryCommand<"put entry away">
   | EntryCommand<"bring entry back">
+  /** Naming an Update puts its first Entry on the Thread, or takes it off. */
   | EntryThreadCommand<"put entry on thread">
   | EntryThreadCommand<"take entry off thread">
   | {
@@ -99,7 +100,10 @@ export type Query = { readonly type: "entries" } | { readonly type: "threads" };
 export type QueryType = Query["type"];
 
 export interface QueryResults {
-  /** Every Entry, newest first: by when it was written, then by `entryId`, highest first. */
+  /**
+   * Every Entry not deleted, newest first: by when it was written, then by
+   * `entryId`, highest first.
+   */
   readonly entries: readonly EntryListItem[];
   /** Every Thread, by `threadId`, which sorts by when it was made. */
   readonly threads: readonly ThreadListItem[];
@@ -111,11 +115,26 @@ export interface EntryListItem {
   readonly entryId: EntryId;
   readonly body: string;
   readonly writtenAt: Instant;
-  /** Set when the Entry is an Update to that Entry. */
+  /**
+   * Set when the Entry is an Update to that Entry. An Update whose Entry was
+   * deleted names the Entry that one followed from, or null when it was the
+   * first.
+   */
   readonly parentEntryId: EntryId | null;
   readonly putAway: boolean;
   readonly followUpDate: FollowUpDate | null;
-  /** The Threads the Entry is on, by `threadId`. */
+  /**
+   * The Follow-up date last completed, and when, until a Follow-up date is
+   * set or cleared. Setting it again undoes the completion.
+   */
+  readonly completed: {
+    readonly at: Instant;
+    readonly followUpDate: FollowUpDate;
+  } | null;
+  /**
+   * The Threads the Entry is on, by `threadId`. An Update is on its first
+   * Entry's Threads, and keeps them when that Entry is deleted.
+   */
   readonly threadIds: readonly ThreadId[];
 }
 

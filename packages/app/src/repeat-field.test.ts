@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { repeatOf, startRepeat } from "./repeat-field.tsx";
+import { draftOf, repeatOf, startRepeat } from "./repeat-field.tsx";
 
 test("a draft gives its Repeat, or none", () => {
   expect(repeatOf({ kind: "none" })).toBeNull();
@@ -41,4 +41,15 @@ test("a new Repeat starts from the chosen day", () => {
   expect(startRepeat("days", sunday15th)).toEqual({ kind: "days", every: "1" });
   expect(startRepeat("none", sunday15th)).toEqual({ kind: "none" });
   expect(startRepeat("weekly", null)).toEqual({ kind: "weekly", weekdays: [] });
+});
+
+test("a Repeat gives back the draft that shows it", () => {
+  for (const repeat of [
+    null,
+    { kind: "days", every: 3 },
+    { kind: "weekly", weekdays: [0, 3] },
+    { kind: "monthly", day: 31 },
+  ] as const) {
+    expect(repeatOf(draftOf(repeat))).toEqual(repeat);
+  }
 });

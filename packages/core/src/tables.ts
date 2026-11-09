@@ -23,10 +23,19 @@ export interface EntryRow {
   /** Set when the Entry is an Update to that Entry. */
   readonly parentEntryId: EntryId | null;
   readonly putAway: boolean;
+  /**
+   * A deleted Entry keeps its row, so its Updates can still be read as
+   * following from what it followed from, and on its Threads.
+   */
+  readonly deleted: boolean;
   readonly followUpDay: CalendarDay | null;
   readonly followUpTime: TimeOfDay | null;
   /** The Follow-up date's Repeat, as JSON. */
   readonly followUpRepeat: string | null;
+  /** When the Follow-up date was last completed, until one is set or cleared. */
+  readonly completedAt: Instant | null;
+  /** The Follow-up date completed then, as JSON. */
+  readonly completed: string | null;
 }
 
 export interface ThreadRow {
@@ -58,9 +67,12 @@ export const tableDefinitions: {
       writtenAt: true,
       parentEntryId: true,
       putAway: true,
+      deleted: true,
       followUpDay: true,
       followUpTime: true,
       followUpRepeat: true,
+      completedAt: true,
+      completed: true,
     },
     key: ["entryId"],
   },
@@ -119,20 +131,17 @@ export function tableChanges(event: WeftEvent): TableChange[] {
             writtenAt,
             parentEntryId,
             putAway: false,
+            deleted: false,
             ...followUpColumns(null),
+            ...completionColumns(null),
           },
         },
       ];
     }
     case "entry edited":
       return [updateEntry(event.content.entryId, { body: event.content.body })];
-    case "entry deleted": {
-      const where = { entryId: event.content.entryId };
-      return [
-        { kind: "delete", table: "entries", where },
-        { kind: "delete", table: "entryThreads", where },
-      ];
-    }
+    case "entry deleted":
+      return [updateEntry(event.content.entryId, { deleted: true })];
     case "entry put away":
       return [updateEntry(event.content.entryId, { putAway: true })];
     case "entry brought back":
@@ -143,16 +152,24 @@ export function tableChanges(event: WeftEvent): TableChange[] {
       return [{ kind: "delete", table: "entryThreads", where: event.content }];
     case "follow-up date set":
       return [
-        updateEntry(
-          event.content.entryId,
-          followUpColumns(event.content.followUpDate),
-        ),
+        updateEntry(event.content.entryId, {
+          ...followUpColumns(event.content.followUpDate),
+          ...completionColumns(null),
+        }),
       ];
     case "follow-up date cleared":
-      return [updateEntry(event.content.entryId, followUpColumns(null))];
+      return [
+        updateEntry(event.content.entryId, {
+          ...followUpColumns(null),
+          ...completionColumns(null),
+        }),
+      ];
     case "follow-up date completed":
       return [
-        updateEntry(event.content.entryId, followUpColumns(event.content.next)),
+        updateEntry(event.content.entryId, {
+          ...followUpColumns(event.content.next),
+          ...completionColumns(event.content),
+        }),
       ];
     case "thread started": {
       const { threadId, name } = event.content;
@@ -201,5 +218,14 @@ function followUpColumns(
     followUpDay: date?.day ?? null,
     followUpTime: date?.time ?? null,
     followUpRepeat: date?.repeat ? JSON.stringify(date.repeat) : null,
+  };
+}
+
+function completionColumns(
+  completion: { completedAt: Instant; completed: FollowUpDate } | null,
+): Pick<EntryRow, "completedAt" | "completed"> {
+  return {
+    completedAt: completion?.completedAt ?? null,
+    completed: completion ? JSON.stringify(completion.completed) : null,
   };
 }

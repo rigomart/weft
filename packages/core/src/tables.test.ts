@@ -65,7 +65,7 @@ function device() {
 }
 
 describe("tableChanges", () => {
-  test("an Entry starts with no Follow-up date, not put away", () => {
+  test("an Entry starts with no Follow-up date, not put away or deleted", () => {
     const { written, entry } = device();
     expect(build([written]).entries).toEqual([
       {
@@ -74,9 +74,12 @@ describe("tableChanges", () => {
         writtenAt: WRITTEN,
         parentEntryId: null,
         putAway: false,
+        deleted: false,
         followUpDay: null,
         followUpTime: null,
         followUpRepeat: null,
+        completedAt: null,
+        completed: null,
       },
     ]);
   });
@@ -110,7 +113,7 @@ describe("tableChanges", () => {
     expect(build(events).entries[0]?.putAway).toBe(false);
   });
 
-  test("a Follow-up date is set, moved on by completing it, and cleared", () => {
+  test("a Follow-up date is set, moved on by completing it, and cleared, keeping the last completion until it is set again", () => {
     const { writer, written, entry } = device();
     const weekly = {
       day: calendarDay("2026-11-15"),
@@ -154,6 +157,8 @@ describe("tableChanges", () => {
       followUpDay: null,
       followUpTime: null,
       followUpRepeat: null,
+      completedAt: "2026-11-18T10:02:00.000Z",
+      completed: '{"day":"2026-11-18","time":null,"repeat":null}',
     });
 
     events.push(
@@ -161,8 +166,14 @@ describe("tableChanges", () => {
         entryId: entry,
         followUpDate: { ...weekly, time: null, repeat: null },
       }),
-      writer.write("follow-up date cleared", { entryId: entry }),
     );
+    expect(build(events).entries[0]).toMatchObject({
+      followUpDay: "2026-11-15",
+      completedAt: null,
+      completed: null,
+    });
+
+    events.push(writer.write("follow-up date cleared", { entryId: entry }));
     expect(build(events).entries[0]?.followUpDay).toBeNull();
   });
 
@@ -180,30 +191,18 @@ describe("tableChanges", () => {
     expect(build(events).entryThreads).toEqual([]);
   });
 
-  test("deleting an Entry removes it and takes it off its Threads", () => {
+  test("deleting an Entry marks it deleted and keeps its row and Threads", () => {
     const { writer, written, entry, thread } = device();
-    const other = writer.write("entry written", {
-      entryId: writer.newId("entry"),
-      body: "Desk chair?",
-      writtenAt: WRITTEN,
-      parentEntryId: null,
-    });
+    const onThread = { entryId: entry, threadId: thread };
     const tables = build([
       written,
-      other,
-      writer.write("entry put on thread", { entryId: entry, threadId: thread }),
-      writer.write("entry put on thread", {
-        entryId: other.content.entryId,
-        threadId: thread,
-      }),
+      writer.write("entry put on thread", onThread),
       writer.write("entry deleted", { entryId: entry }),
     ]);
-    expect(tables.entries.map((row) => row.entryId)).toEqual([
-      other.content.entryId,
+    expect(tables.entries).toEqual([
+      expect.objectContaining({ entryId: entry, deleted: true }),
     ]);
-    expect(tables.entryThreads).toEqual([
-      { entryId: other.content.entryId, threadId: thread },
-    ]);
+    expect(tables.entryThreads).toEqual([onThread]);
   });
 
   test("a Thread is renamed, resolved and reopened", () => {

@@ -10,7 +10,6 @@ import {
 import { cn } from "cn";
 import { CalendarIcon, CheckIcon } from "lucide-react";
 import {
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -43,12 +42,12 @@ import { DayField, TimeField } from "./follow-up-date-fields.tsx";
 import {
   dayName,
   followUpLabel,
-  localDay,
   repeatLabel,
   timeName,
   weekdayOf,
 } from "./follow-up-date.ts";
 import { glance, type Glance, type GroupName } from "./glance.ts";
+import { messageOf, writtenOn } from "./weft-state.ts";
 import {
   noRepeat,
   RepeatField,
@@ -146,12 +145,20 @@ export type CaptureBox = ReturnType<typeof useCaptureBox>;
 export function NowView({
   weft,
   captureBox,
+  entries,
+  listFailure,
+  today,
+  openEntryId,
+  onOpen,
 }: {
   weft: Weft;
   captureBox: CaptureBox;
+  entries: readonly EntryListItem[];
+  listFailure: string | undefined;
+  today: CalendarDay;
+  openEntryId: EntryId | null;
+  onOpen: (entryId: EntryId) => void;
 }) {
-  const { entries, failure: listFailure } = useEntries(weft);
-  const today = useToday();
   const { groups, loose } = useMemo(
     () => glance(entries, today),
     [entries, today],
@@ -186,12 +193,14 @@ export function NowView({
       quiet={quiet}
       completing={completing.has(entry.entryId)}
       onComplete={onComplete}
+      open={entry.entryId === openEntryId}
+      onOpen={onOpen}
     />
   );
 
   return (
     <TooltipProvider>
-      <div className="mx-auto grid max-w-[1060px] gap-x-12 gap-y-8 px-8 pt-6 pb-16 md:grid-cols-[minmax(0,1fr)_16.5rem]">
+      <div className="mx-auto grid max-w-[1060px] gap-x-12 gap-y-8 px-8 pt-6 pb-16 @2xl:grid-cols-[minmax(0,1fr)_14rem] @3xl:grid-cols-[minmax(0,1fr)_16.5rem] @max-3xl:gap-x-8">
         <main className="flex min-w-0 flex-col">
           <h1 className="text-2xl font-semibold tracking-tight">
             {dayName(today, today, true)}
@@ -267,7 +276,13 @@ export function NowView({
             <Separator className="my-3" />
             <ItemGroup aria-labelledby={headingId("Loose")}>
               {loose.map((entry) => (
-                <Item key={entry.entryId} role="listitem" size="xs">
+                <Item
+                  key={entry.entryId}
+                  role="listitem"
+                  size="xs"
+                  className={rowClass(entry.entryId === openEntryId)}
+                >
+                  <OpenButton entry={entry} onOpen={onOpen} />
                   <ItemContent>
                     <span>{entry.body}</span>
                     <time
@@ -372,6 +387,8 @@ function EntryRow({
   quiet,
   completing,
   onComplete,
+  open,
+  onOpen,
 }: {
   entry: EntryListItem;
   group: GroupName;
@@ -379,6 +396,8 @@ function EntryRow({
   quiet: boolean;
   completing: boolean;
   onComplete: (entry: EntryListItem, button: HTMLButtonElement) => void;
+  open: boolean;
+  onOpen: (entryId: EntryId) => void;
 }) {
   const date = entry.followUpDate!;
   return (
@@ -386,8 +405,10 @@ function EntryRow({
       role="listitem"
       variant={quiet ? "default" : "outline"}
       size={quiet ? "xs" : "sm"}
+      className={rowClass(open)}
     >
-      <ItemMedia>
+      <OpenButton entry={entry} onOpen={onOpen} />
+      <ItemMedia className="relative">
         <Tooltip>
           <TooltipTrigger
             render={
@@ -406,7 +427,7 @@ function EntryRow({
           <TooltipContent>Complete</TooltipContent>
         </Tooltip>
       </ItemMedia>
-      <ItemContent className="min-w-64">
+      <ItemContent className="min-w-40 @3xl:min-w-64">
         <span>{entry.body}</span>
       </ItemContent>
       <ItemActions className="ms-auto text-muted-foreground">
@@ -424,6 +445,30 @@ function EntryRow({
         </time>
       </ItemActions>
     </Item>
+  );
+}
+
+function OpenButton({
+  entry,
+  onOpen,
+}: {
+  entry: EntryListItem;
+  onOpen: (entryId: EntryId) => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={`Open "${entry.body}"`}
+      className="absolute inset-0 cursor-pointer rounded-[inherit] outline-none"
+      onClick={() => onOpen(entry.entryId)}
+    />
+  );
+}
+
+function rowClass(open: boolean) {
+  return cn(
+    "relative hover:bg-muted/50 has-[>button:focus-visible]:ring-3 has-[>button:focus-visible]:ring-ring/50",
+    open && "bg-muted/60 ring-2 ring-ring/70 hover:bg-muted/60",
   );
 }
 
@@ -540,82 +585,7 @@ function headingId(name: string): string {
   return `now-${name.toLowerCase().replace(" ", "-")}`;
 }
 
-/** Today on this device's calendar, moving on at local midnight and when the window comes back. */
-function useToday(): CalendarDay {
-  const [today, setToday] = useState(() => localDay());
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    function check() {
-      setToday(localDay());
-      clearTimeout(timer);
-      const midnight = new Date();
-      midnight.setHours(24, 0, 0, 0);
-      timer = setTimeout(check, midnight.getTime() - Date.now() + 50);
-    }
-    check();
-    window.addEventListener("focus", check);
-    document.addEventListener("visibilitychange", check);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("focus", check);
-      document.removeEventListener("visibilitychange", check);
-    };
-  }, []);
-  return today;
-}
-
-function useEntries(weft: Weft) {
-  const [entries, setEntries] = useState<readonly EntryListItem[]>([]);
-  const [failure, setFailure] = useState<string>();
-  useEffect(() => {
-    let latest = 0;
-    let stopped = false;
-    function load() {
-      const reading = ++latest;
-      weft.read({ type: "entries" }).then(
-        (read) => {
-          if (stopped || reading !== latest) return;
-          setEntries(read);
-          setFailure(undefined);
-        },
-        (error: unknown) => {
-          if (stopped || reading !== latest) return;
-          setFailure(`Weft couldn't show your entries: ${messageOf(error)}`);
-        },
-      );
-    }
-    const unsubscribe = weft.subscribe((change) => {
-      if (
-        change.tables.includes("entries") ||
-        change.tables.includes("entryThreads")
-      ) {
-        load();
-      }
-    });
-    load();
-    return () => {
-      stopped = true;
-      unsubscribe();
-    };
-  }, [weft]);
-  return { entries, failure };
-}
-
 /** An HTML `datetime` value: `2026-11-09` or `2026-11-09T09:30`. */
 function followUpDateTime({ day, time }: FollowUpDate): string {
   return time === null ? day : `${day}T${time}`;
-}
-
-function writtenOn(instant: string): string {
-  const date = new Date(instant);
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year:
-      date.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
-  });
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

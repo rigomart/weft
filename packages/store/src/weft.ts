@@ -93,7 +93,11 @@ export async function openWeft(options: InProcessWeftOptions): Promise<Weft> {
                 (await followUpDateOf(database, command.entryId))!,
                 ms,
               )
-            : eventFor(command, meta, instantFromMs(ms));
+            : eventFor(
+                await onFirstEntry(database, command),
+                meta,
+                instantFromMs(ms),
+              );
         await log.append([event]);
         lastHlc = hlc;
         notify(event);
@@ -113,6 +117,26 @@ export async function openWeft(options: InProcessWeftOptions): Promise<Weft> {
       listeners.add(subscription);
       return () => listeners.delete(subscription);
     },
+  };
+}
+
+/**
+ * Putting an Update on a Thread, or taking it off one, puts its first Entry
+ * on it or takes it off: an Update has no Threads of its own (ADR 0001).
+ */
+async function onFirstEntry<C extends Command>(
+  sql: SqlExecutor,
+  command: C,
+): Promise<C> {
+  if (
+    command.type !== "put entry on thread" &&
+    command.type !== "take entry off thread"
+  ) {
+    return command;
+  }
+  return {
+    ...command,
+    entryId: firstEntryOf(command.entryId, await readLinks(sql)),
   };
 }
 
@@ -209,7 +233,9 @@ function eventFor(
 async function check(sql: SqlExecutor, command: Command) {
   switch (command.type) {
     case "write entry":
-      if (await entryExists(sql, command.entryId)) {
+      if (
+        await entryExists(sql, command.entryId, { counting: "deleted too" })
+      ) {
         throw new WeftError(
           "already exists",
           `Entry ${command.entryId} already exists.`,
@@ -251,9 +277,16 @@ async function check(sql: SqlExecutor, command: Command) {
   }
 }
 
-async function entryExists(sql: SqlExecutor, entryId: EntryId) {
+/** A deleted Entry's ID stays taken, but nothing can change the Entry. */
+async function entryExists(
+  sql: SqlExecutor,
+  entryId: EntryId,
+  { counting }: { counting: "live" | "deleted too" } = { counting: "live" },
+) {
   const { rows } = await sql.execute(
-    `SELECT 1 FROM entries WHERE entry_id = ?`,
+    counting === "live"
+      ? `SELECT 1 FROM entries WHERE entry_id = ? AND deleted = 0`
+      : `SELECT 1 FROM entries WHERE entry_id = ?`,
     [entryId],
   );
   return rows.length > 0;
@@ -291,20 +324,83 @@ async function readEntries(sql: SqlExecutor): Promise<EntryListItem[]> {
       row.thread_id as ThreadId,
     ]);
   }
+  const links = await readLinks(sql);
   const { rows } = await sql.execute(
     `SELECT entry_id, body, written_at, parent_entry_id, put_away,
-        follow_up_day, follow_up_time, follow_up_repeat
-      FROM entries ORDER BY written_at DESC, entry_id DESC`,
+        follow_up_day, follow_up_time, follow_up_repeat, completed_at, completed
+      FROM entries WHERE deleted = 0
+      ORDER BY written_at DESC, entry_id DESC`,
   );
   return rows.map((row) => ({
     entryId: row.entry_id as EntryId,
     body: String(row.body),
     writtenAt: row.written_at as Instant,
-    parentEntryId: row.parent_entry_id as EntryId | null,
+    parentEntryId: liveParent(row.parent_entry_id as EntryId | null, links),
     putAway: row.put_away === 1,
     followUpDate: followUpDateFromRow(row),
-    threadIds: threadIds.get(String(row.entry_id)) ?? [],
+    completed:
+      row.completed_at === null
+        ? null
+        : {
+            at: row.completed_at as Instant,
+            followUpDate: JSON.parse(String(row.completed)) as FollowUpDate,
+          },
+    threadIds:
+      threadIds.get(firstEntryOf(row.entry_id as EntryId, links)) ?? [],
   }));
+}
+
+/** Each Entry's parent, and whether it is deleted, deleted Entries included. */
+type Links = ReadonlyMap<
+  EntryId,
+  { readonly parent: EntryId | null; readonly deleted: boolean }
+>;
+
+async function readLinks(sql: SqlExecutor): Promise<Links> {
+  const { rows } = await sql.execute(
+    `SELECT entry_id, parent_entry_id, deleted FROM entries`,
+  );
+  return new Map(
+    rows.map((row) => [
+      row.entry_id as EntryId,
+      {
+        parent: row.parent_entry_id as EntryId | null,
+        deleted: row.deleted === 1,
+      },
+    ]),
+  );
+}
+
+/**
+ * An Update whose Entry was deleted follows from what that Entry followed
+ * from, or from nothing when it was the first.
+ */
+function liveParent(parent: EntryId | null, links: Links): EntryId | null {
+  const seen = new Set<EntryId>();
+  while (parent !== null && links.get(parent)?.deleted) {
+    if (seen.has(parent)) return null;
+    seen.add(parent);
+    parent = links.get(parent)!.parent;
+  }
+  return parent;
+}
+
+/**
+ * The first Entry of the chain of Updates `entryId` is in, deleted or not.
+ * An Update is on its first Entry's Threads (ADR 0001), and they stay its
+ * Threads when that Entry is deleted.
+ */
+function firstEntryOf(entryId: EntryId, links: Links): EntryId {
+  const seen = new Set<EntryId>([entryId]);
+  let current = entryId;
+  for (;;) {
+    const parent = links.get(current)?.parent ?? null;
+    if (parent === null || !links.has(parent) || seen.has(parent)) {
+      return current;
+    }
+    seen.add(parent);
+    current = parent;
+  }
 }
 
 async function followUpDateOf(

@@ -217,14 +217,14 @@ export function describeStore(name: string, open: () => Promise<Database>) {
         const log = await openEventLog(db);
         await log.append(someEvents(device(1)));
         const before = await dumpTables(db);
-        expect(before.entries).toHaveLength(3);
+        expect(before.entries).toHaveLength(4);
         expect(before.threads).toEqual([
           expect.objectContaining({
             name: "Lower back",
             resolved_at: "2026-12-09T08:00:00.000Z",
           }),
         ]);
-        expect(before.entryThreads).toHaveLength(1);
+        expect(before.entryThreads).toHaveLength(2);
 
         for (const name of tableNames) {
           await db.execute(`DROP TABLE "${sqlName(name)}"`);
