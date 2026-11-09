@@ -1,6 +1,6 @@
 import { makeId } from "@weft/contracts";
 
-export type NewId = <Kind extends "event" | "entry">(
+export type NewId = <Kind extends "event" | "entry" | "thread">(
   kind: Kind,
 ) => ReturnType<typeof makeId<Kind>>;
 

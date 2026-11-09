@@ -21,7 +21,7 @@ function recording(outcomes: ("ok" | "fail")[]) {
     subscribe: () => () => {},
   };
   let ms = Date.UTC(2026, 10, 8);
-  const newId = <Kind extends "event" | "entry">(_kind: Kind) =>
+  const newId = <Kind extends "event" | "entry" | "thread">(_kind: Kind) =>
     makeId<Kind>(ms++, () => new Uint8Array(10));
   return { sent, capture: createCapture(weft, newId) };
 }

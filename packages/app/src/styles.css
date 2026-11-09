@@ -124,6 +124,17 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+[data-thread] {
+  --thread: oklch(0.6 0.13 var(--thread-hue));
+  --thread-tint: oklch(0.95 0.035 var(--thread-hue));
+  --thread-ink: oklch(0.45 0.11 var(--thread-hue));
+}
+.dark [data-thread] {
+  --thread: oklch(0.72 0.12 var(--thread-hue));
+  --thread-tint: oklch(0.3 0.05 var(--thread-hue));
+  --thread-ink: oklch(0.85 0.08 var(--thread-hue));
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
