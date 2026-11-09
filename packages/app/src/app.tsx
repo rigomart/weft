@@ -18,9 +18,10 @@ export const views = [
 export function App({ weft }: { weft: Weft }) {
   const captureBox = useCaptureBox(weft);
   return (
-    <Tabs defaultValue="now" className="min-h-svh">
-      <header className="border-b p-2">
-        <TabsList>
+    <Tabs defaultValue="now" className="min-h-svh gap-0">
+      <header className="flex items-center gap-6 px-8 pt-4">
+        <span className="text-sm font-semibold">Weft</span>
+        <TabsList variant="line">
           {views.map((view) => (
             <TabsTrigger key={view.value} value={view.value}>
               {view.label}

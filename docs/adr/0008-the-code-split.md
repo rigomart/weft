@@ -27,4 +27,6 @@ The glance view starts as a port of Vita OS's Dashboard, adjusted to Entries and
 
 **Date:** 2026-11-08, settled in #1 and set up in #28
 
-`packages/app` uses shadcn/ui on Base UI (`@base-ui/react`), not Radix, with the `base-nova` style as the shadcn CLI ships it. Components are added with the CLI from `packages/app` and kept as shipped, apart from formatting. There is no styling of our own until a later design pass. Hosts import `@weft/app/styles.css`.
+`packages/app` uses shadcn/ui on Base UI (`@base-ui/react`), not Radix, with the `base-nova` style as the shadcn CLI ships it. Components are added with the CLI from `packages/app` and kept as shipped, apart from formatting. Hosts import `@weft/app/styles.css`.
+
+The first design pass, which reshaped Now, replaces "no styling of our own until a later design pass" with this rule. The interface uses shadcn/ui as shipped, composed with Tailwind's layout utilities: flex, grid, gap, padding and width. Type is the style's own Geist, set with Tailwind's text utilities, and colour comes from the style's theme tokens. A class overrides a component's own styles only for layout, such as a width or a gap. The one token of Weft's own is `--late`, because colour belongs to time (ADR 0009). Adding a second token means amending this ADR.

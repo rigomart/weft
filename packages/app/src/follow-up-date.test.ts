@@ -2,9 +2,12 @@ import { expect, test } from "bun:test";
 import { calendarDay, timeOfDay, type FollowUpDate } from "@weft/contracts";
 
 import {
+  dayName,
   daysFrom,
   followUpLabel,
   localDay,
+  parseTime,
+  quickDays,
   repeatLabel,
   weekdayOf,
 } from "./follow-up-date.ts";
@@ -69,4 +72,48 @@ test("says a Repeat's rhythm", () => {
 test("the weekday of a calendar day, from 0, Sunday", () => {
   expect(weekdayOf(calendarDay("2026-11-08"))).toBe(0);
   expect(weekdayOf(calendarDay("2026-11-14"))).toBe(6);
+});
+
+test("reads a time typed the way people type one", () => {
+  expect(
+    ["9", "930", "9:30", "9.30", "14h15", "2pm", "2:30 pm", "12am", "12pm"].map(
+      parseTime,
+    ),
+  ).toEqual([
+    "09:00",
+    "09:30",
+    "09:30",
+    "09:30",
+    "14:15",
+    "14:00",
+    "14:30",
+    "00:00",
+    "12:00",
+  ]);
+  expect(["", "24", "9:60", "13pm", "0am", "soon"].map(parseTime)).toEqual([
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+  ]);
+});
+
+test("offers today, tomorrow and a week from today, across a month's end", () => {
+  expect(quickDays(calendarDay("2026-11-29"))).toEqual([
+    { label: "Today", day: calendarDay("2026-11-29") },
+    { label: "Tomorrow", day: calendarDay("2026-11-30") },
+    { label: "Next week", day: calendarDay("2026-12-06") },
+  ]);
+});
+
+test("names a day, with the year only when it is not this year", () => {
+  expect(dayName(today, today, true, "en-US")).toBe("Sunday, November 8");
+  expect(dayName(calendarDay("2026-11-15"), today, false, "en-US")).toBe(
+    "Sun, Nov 15",
+  );
+  expect(dayName(calendarDay("2027-01-03"), today, false, "en-US")).toBe(
+    "Sun, Jan 3, 2027",
+  );
 });
