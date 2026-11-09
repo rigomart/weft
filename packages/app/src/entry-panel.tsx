@@ -13,6 +13,7 @@ import {
 import { CalendarIcon, CheckIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { createCapture } from "./capture.ts";
 import { createCompletion } from "./complete.ts";
 import {
   AlertDialog,
@@ -132,6 +133,18 @@ export function EntryPanel({
     }
   }
 
+  const pullOutCapture = useMemo(() => createCapture(weft), [weft]);
+
+  async function pullOut(piece: string) {
+    try {
+      const updateId = await pullOutCapture(piece, null, entry.entryId);
+      setFailure(undefined);
+      if (updateId !== null) onOpen(updateId);
+    } catch (error) {
+      setFailure(failureMessage(error));
+    }
+  }
+
   async function onComplete() {
     if (entry.followUpDate === null) return;
     try {
@@ -153,6 +166,7 @@ export function EntryPanel({
       <BodyField
         entry={entry}
         onSave={(body) => run({ type: "edit entry", body })}
+        onPullOut={(piece) => void pullOut(piece)}
       />
       <FollowUpDateRow
         entry={entry}
@@ -373,11 +387,15 @@ export function bodySaves() {
 function BodyField({
   entry,
   onSave,
+  onPullOut,
 }: {
   entry: EntryListItem;
   onSave: (body: string) => Promise<boolean>;
+  onPullOut: (piece: string) => void;
 }) {
   const [draft, setDraft] = useState(entry.body);
+  const [selected, setSelected] = useState("");
+  const field = useRef<HTMLTextAreaElement>(null);
   const latest = useRef({ draft, body: entry.body, onSave });
   latest.current = { draft, body: entry.body, onSave };
   const saves = useRef(bodySaves());
@@ -385,6 +403,7 @@ function BodyField({
   useEffect(() => {
     if (saves.current.read(entry.body, latest.current.draft)) {
       setDraft(entry.body);
+      setSelected("");
     }
   }, [entry.body]);
   useEffect(() => () => save(), []);
@@ -403,14 +422,45 @@ function BodyField({
   }
 
   return (
-    <Textarea
-      aria-label="Body"
-      value={draft}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={save}
-      className="min-h-20 resize-none text-base md:text-base"
-    />
+    <div className="flex flex-col gap-2">
+      <Textarea
+        ref={field}
+        aria-label="Body"
+        value={draft}
+        onChange={(event) => {
+          setDraft(event.target.value);
+          setSelected(selectionIn(event.currentTarget));
+        }}
+        onSelect={(event) => setSelected(selectionIn(event.currentTarget))}
+        onKeyUp={(event) => setSelected(selectionIn(event.currentTarget))}
+        onMouseUp={(event) => setSelected(selectionIn(event.currentTarget))}
+        onBlur={save}
+        className="min-h-20 resize-none text-base md:text-base"
+      />
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="xs"
+          disabled={selected === ""}
+          onClick={() => {
+            const piece = selectionIn(field.current);
+            setSelected(piece);
+            if (piece) onPullOut(piece);
+          }}
+        >
+          Pull out selection
+        </Button>
+        <span className="text-xs text-muted-foreground">
+          Select part of the text to make it an update of its own.
+        </span>
+      </div>
+    </div>
   );
+}
+
+function selectionIn(field: HTMLTextAreaElement | null): string {
+  if (!field) return "";
+  return field.value.slice(field.selectionStart, field.selectionEnd).trim();
 }
 
 function FollowUpDateRow({
