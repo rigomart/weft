@@ -1,4 +1,4 @@
-import type { Command, FollowUpDate, Weft } from "@weft/contracts";
+import type { Command, EntryId, FollowUpDate, Weft } from "@weft/contracts";
 
 import { newId, type NewId } from "./new-id.ts";
 
@@ -15,17 +15,22 @@ interface Commands {
  * one. Until a capture goes through, capturing the same text sends the same "write entry" again,
  * with the same IDs, so a retry after a failure whose outcome is unknown never stores the Entry
  * twice (ADR 0010). The same goes for its date, and a date changed before the retry is set on that
- * same Entry. Resolves to false when there is nothing to write.
+ * same Entry. Resolves to the Entry's ID, or null when there is nothing to write.
  */
 export function createCapture(weft: Weft, makeNewId: NewId = newId) {
   let pending: Commands | undefined;
   return async function capture(
     text: string,
     followUpDate: FollowUpDate | null = null,
-  ): Promise<boolean> {
+    /** Set to write an Update to that Entry. */
+    parentEntryId: EntryId | null = null,
+  ): Promise<EntryId | null> {
     const body = text.trim();
-    if (!body) return false;
-    if (pending?.write.body !== body) {
+    if (!body) return null;
+    if (
+      pending?.write.body !== body ||
+      pending.write.parentEntryId !== parentEntryId
+    ) {
       const entryId = makeNewId("entry");
       pending = {
         write: {
@@ -33,7 +38,7 @@ export function createCapture(weft: Weft, makeNewId: NewId = newId) {
           eventId: makeNewId("event"),
           entryId,
           body,
-          parentEntryId: null,
+          parentEntryId,
         },
         setFollowUpDate: null,
       };
@@ -55,7 +60,7 @@ export function createCapture(weft: Weft, makeNewId: NewId = newId) {
     await weft.run(commands.write);
     if (commands.setFollowUpDate) await weft.run(commands.setFollowUpDate);
     if (pending === commands) pending = undefined;
-    return true;
+    return commands.write.entryId;
   };
 }
 

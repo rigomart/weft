@@ -49,6 +49,7 @@ import {
   weekdayOf,
 } from "./follow-up-date.ts";
 import { glance, quietThreads, type Glance, type GroupName } from "./glance.ts";
+import { firstEntryOf } from "./story.ts";
 import { LooseChip, ThreadChip } from "./thread-chip.tsx";
 import { messageOf, writtenOn } from "./weft-state.ts";
 import {
@@ -154,6 +155,7 @@ export function NowView({
   today,
   openId,
   onOpen,
+  onCompleted,
   onOpenThread,
 }: {
   weft: Weft;
@@ -164,6 +166,8 @@ export function NowView({
   today: CalendarDay;
   openId: EntryId | ThreadId | null;
   onOpen: (entryId: EntryId) => void;
+  /** After ✓ on a row, to ask what happened. */
+  onCompleted: (entryId: EntryId) => void;
   onOpenThread: (thread: ThreadListItem) => void;
 }) {
   const { groups, loose } = useMemo(
@@ -173,6 +177,10 @@ export function NowView({
   const quiet = useMemo(
     () => quietThreads(entries, threads),
     [entries, threads],
+  );
+  const entryById = useMemo(
+    () => new Map(entries.map((entry) => [entry.entryId, entry])),
+    [entries],
   );
   const threadById = useMemo(
     () => new Map(threads.map((thread) => [thread.threadId, thread])),
@@ -185,7 +193,11 @@ export function NowView({
     complete,
   } = useCompletion(weft);
   const { comingBack, onComplete } = useFocusAfterCompleting(
-    complete,
+    async (entry) => {
+      const completed = await complete(entry);
+      if (completed) onCompleted(entry.entryId);
+      return completed;
+    },
     groups,
     box,
   );
@@ -213,6 +225,9 @@ export function NowView({
       threads={entry.threadIds.flatMap(
         (threadId) => threadById.get(threadId) ?? [],
       )}
+      startedFrom={
+        entry.parentEntryId === null ? null : firstEntryOf(entry, entryById)
+      }
       onOpenThread={onOpenThread}
     />
   );
@@ -458,6 +473,7 @@ function EntryRow({
   open,
   onOpen,
   threads,
+  startedFrom,
   onOpenThread,
 }: {
   entry: EntryListItem;
@@ -470,6 +486,7 @@ function EntryRow({
   onOpen: (entryId: EntryId) => void;
   /** The Threads the Entry is on. */
   threads: readonly ThreadListItem[];
+  startedFrom: EntryListItem | null;
   onOpenThread: (thread: ThreadListItem) => void;
 }) {
   const date = entry.followUpDate!;
@@ -502,6 +519,11 @@ function EntryRow({
       </ItemMedia>
       <ItemContent className="min-w-40 @3xl:min-w-64">
         <span>{entry.body}</span>
+        {startedFrom && (
+          <span className="truncate text-xs text-muted-foreground">
+            ↳ {startedFrom.body}
+          </span>
+        )}
         <span className="flex flex-wrap gap-1">
           {threads.length === 0 ? (
             <LooseChip />

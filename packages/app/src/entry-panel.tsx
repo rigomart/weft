@@ -3,6 +3,7 @@ import {
   WeftError,
   type CalendarDay,
   type Command,
+  type EntryId,
   type EntryListItem,
   type FollowUpDate,
   type ThreadId,
@@ -27,6 +28,7 @@ import {
 import { Button } from "./components/ui/button.tsx";
 import { FieldError } from "./components/ui/field.tsx";
 import { Separator } from "./components/ui/separator.tsx";
+import { FollowsFrom, StoryList, UpdateComposer } from "./entry-story.tsx";
 import { SidePanel } from "./side-panel.tsx";
 import { Textarea } from "./components/ui/textarea.tsx";
 import { DayField, TimeField } from "./follow-up-date-fields.tsx";
@@ -56,18 +58,31 @@ type EntryCommand = Command extends infer C
 export function EntryPanel({
   weft,
   entry,
+  entries,
   threads,
   today,
+  asking,
+  onAsking,
   onClose,
+  onOpen,
   onOpenThread,
 }: {
   weft: Weft;
   entry: EntryListItem;
+  entries: readonly EntryListItem[];
   threads: readonly ThreadListItem[];
   today: CalendarDay;
+  /** Whether the Update box asks what happened, after a completion. */
+  asking: boolean;
+  onAsking: (asking: boolean) => void;
   onClose: () => void;
+  onOpen: (entryId: EntryId) => void;
   onOpenThread: (thread: ThreadListItem) => void;
 }) {
+  const parent =
+    entry.parentEntryId === null
+      ? undefined
+      : entries.find((each) => each.entryId === entry.parentEntryId);
   const [failure, setFailure] = useState<string>();
   const complete = useMemo(() => createCompletion(weft), [weft]);
 
@@ -122,6 +137,7 @@ export function EntryPanel({
     try {
       await complete(entry.entryId, entry.followUpDate);
       setFailure(undefined);
+      onAsking(true);
     } catch (error) {
       setFailure(failureMessage(error));
     }
@@ -133,6 +149,7 @@ export function EntryPanel({
       label={panelTitle(entry)}
       onClose={onClose}
     >
+      {parent && <FollowsFrom parent={parent} onOpen={onOpen} />}
       <BodyField
         entry={entry}
         onSave={(body) => run({ type: "edit entry", body })}
@@ -146,15 +163,38 @@ export function EntryPanel({
         onClear={() => run({ type: "clear follow-up date" })}
         onComplete={onComplete}
       />
-      <ThreadsSection
-        threads={threads}
-        on={entry.threadIds}
-        onOpen={onOpenThread}
-        onTakeOff={(thread) =>
-          run({ type: "take entry off thread", threadId: thread.threadId })
-        }
-        onPutOn={putOnThread}
+      <UpdateComposer
+        weft={weft}
+        entry={entry}
+        today={today}
+        asking={asking}
+        onAdded={onOpen}
+        onNothingToAdd={() => onAsking(false)}
       />
+      <StoryList
+        entry={entry}
+        entries={entries}
+        today={today}
+        onOpen={onOpen}
+      />
+      {entry.parentEntryId === null ? (
+        <ThreadsSection
+          threads={threads}
+          on={entry.threadIds}
+          onOpen={onOpenThread}
+          onTakeOff={(thread) =>
+            run({ type: "take entry off thread", threadId: thread.threadId })
+          }
+          onPutOn={putOnThread}
+        />
+      ) : (
+        <UpdateThreads
+          on={entry.threadIds.flatMap(
+            (threadId) => threads.find((t) => t.threadId === threadId) ?? [],
+          )}
+          onOpen={onOpenThread}
+        />
+      )}
       <FieldError>{failure}</FieldError>
       <Separator />
       <div className="flex gap-2">
@@ -253,6 +293,37 @@ function ThreadsSection({
         </ul>
       )}
       <ThreadPicker threads={threads} on={on} onChoose={onPutOn} />
+    </section>
+  );
+}
+
+function UpdateThreads({
+  on,
+  onOpen,
+}: {
+  on: readonly ThreadListItem[];
+  onOpen: (thread: ThreadListItem) => void;
+}) {
+  return (
+    <section aria-labelledby="entry-threads" className="flex flex-col gap-2">
+      <h3
+        id="entry-threads"
+        className="text-xs font-medium tracking-wider text-muted-foreground uppercase"
+      >
+        Threads
+      </h3>
+      <p className="text-sm text-muted-foreground">
+        {on.length === 0
+          ? "Loose, like the entry it started from."
+          : "An update is on the threads of the entry it started from."}
+      </p>
+      {on.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {on.map((thread) => (
+            <ThreadChip key={thread.threadId} thread={thread} onOpen={onOpen} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

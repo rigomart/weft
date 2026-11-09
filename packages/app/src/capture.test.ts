@@ -28,7 +28,8 @@ function recording(outcomes: ("ok" | "fail")[]) {
 
 test("writes the trimmed text as a new Entry", async () => {
   const { sent, capture } = recording(["ok"]);
-  expect(await capture("  Back stiff after the drive \n")).toBe(true);
+  const written = await capture("  Back stiff after the drive \n");
+  expect(written).toBe(entryIdOf(sent[0]!));
   expect(sent).toEqual([
     {
       type: "write entry",
@@ -42,7 +43,7 @@ test("writes the trimmed text as a new Entry", async () => {
 
 test("writes nothing for an empty box", async () => {
   const { sent, capture } = recording([]);
-  expect(await capture("   ")).toBe(false);
+  expect(await capture("   ")).toBeNull();
   expect(sent).toEqual([]);
 });
 
@@ -75,7 +76,7 @@ const tomorrow: FollowUpDate = {
 
 test("with a Follow-up date, writes the Entry and then sets its date", async () => {
   const { sent, capture } = recording(["ok", "ok"]);
-  expect(await capture("Book the checkup", tomorrow)).toBe(true);
+  expect(await capture("Book the checkup", tomorrow)).toBe(entryIdOf(sent[0]!));
   expect(sent).toEqual([
     expect.objectContaining({ type: "write entry", body: "Book the checkup" }),
     {
@@ -109,4 +110,21 @@ test("a date changed after a failure is set on the same Entry, by a new command"
     followUpDate: { ...tomorrow, time: null },
   });
   expect(sent[3]!.eventId).not.toBe(sent[1]!.eventId);
+});
+
+test("an Update is written with the Entry it follows, and the same text for another Entry is a new one", async () => {
+  const { sent, capture } = recording(["fail", "ok", "ok"]);
+  const claim = makeId<"entry">(
+    Date.UTC(2026, 10, 1),
+    () => new Uint8Array(10),
+  );
+  const other = makeId<"entry">(
+    Date.UTC(2026, 10, 2),
+    () => new Uint8Array(10),
+  );
+  await expect(capture("Rejected", null, claim)).rejects.toThrow();
+  await capture("Rejected", null, other);
+  expect(sent[0]).toMatchObject({ type: "write entry", parentEntryId: claim });
+  expect(sent[1]).toMatchObject({ type: "write entry", parentEntryId: other });
+  expect(entryIdOf(sent[1]!)).not.toBe(entryIdOf(sent[0]!));
 });
