@@ -17,11 +17,14 @@ const DAY = 86_400_000;
 const noon = dateOf(today).getTime() + DAY / 2;
 let ms = Date.UTC(2026, 9, 1);
 
-function thread(name: string, resolved = false): ThreadListItem {
+function thread(name: string, resolvedDaysAgo?: number): ThreadListItem {
   return {
     threadId: makeId<"thread">(ms++, () => new Uint8Array(10)),
     name,
-    resolvedAt: resolved ? (new Date(noon).toISOString() as Instant) : null,
+    resolvedAt:
+      resolvedDaysAgo === undefined
+        ? null
+        : (new Date(noon - resolvedDaysAgo * DAY).toISOString() as Instant),
   };
 }
 
@@ -77,28 +80,32 @@ const layout = (
 const dotOf = (result: ReturnType<typeof layout>, body: string) =>
   result.dots.find((dot) => dot.entry.body === body)!;
 
-test("one lane per open Thread, most recently active first", () => {
+test("one lane per open Thread, most recently active first, then the resolved ones, ending when they were resolved", () => {
   const sleep = thread("Sleep");
   const teeth = thread("Teeth");
-  const car = thread("Replace the car", true);
+  const car = thread("Replace the car", 10);
   const garden = thread("Garden");
+  const tax = thread("Taxes", 2);
   const result = layout(
     [
       entry("Slept badly", { daysAgo: 1, on: [sleep] }),
       entry("Night guard", { daysAgo: 3, on: [teeth] }),
-      entry("Sold it", { on: [car] }),
+      entry("Sold it", { daysAgo: 12, on: [car] }),
     ],
-    [sleep, teeth, car, garden],
+    [sleep, teeth, car, garden, tax],
   );
   expect(result.lanes.map((lane) => lane.thread.name)).toEqual([
     "Sleep",
     "Teeth",
     "Garden",
+    "Taxes",
+    "Replace the car",
   ]);
-  expect(result.dots.map((dot) => dot.entry.body)).toEqual([
-    "Night guard",
-    "Slept badly",
-  ]);
+  const [, , , taxes, sold] = result.lanes;
+  const perDay = (result.today - sold!.to) / 10;
+  expect(taxes!.to).toBeCloseTo(result.today - 2 * perDay, 5);
+  expect(sold!.from).toBe(dotOf(result, "Sold it").x);
+  expect(sold!.until).toBeNull();
 });
 
 test("Threads that share Entries sit side by side", () => {
@@ -132,26 +139,35 @@ test("an Entry on two Threads is one dot spanning both lanes", () => {
   expect(dot.ys).toEqual(result.lanes.map((l) => l.y));
 });
 
-test("Loose Entries sit in their own band; put-away Entries and their Updates are left out", () => {
+test("Loose Entries sit in their own band, and put-away Entries and their Updates stay, faded", () => {
   const teeth = thread("Teeth");
   const away = entry("Old idea", { putAway: true });
   const result = layout(
     [
       entry("Desk chair?", { daysAgo: 2 }),
       entry("Night guard", { on: [teeth] }),
+      entry("Dentist again", { day: "2026-12-01", putAway: true, on: [teeth] }),
       away,
       entry("More on it", { parent: away.entryId }),
     ],
     [teeth],
   );
-  expect(result.dots.map((dot) => dot.entry.body)).toEqual([
-    "Desk chair?",
-    "Night guard",
+  expect(
+    result.dots.map((dot) => [dot.entry.body, dot.threadIds.length, dot.away]),
+  ).toEqual([
+    ["Desk chair?", 0, false],
+    ["Night guard", 1, false],
+    ["Old idea", 0, true],
+    ["More on it", 0, true],
+    ["Dentist again", 1, true],
   ]);
-  const loose = dotOf(result, "Desk chair?");
-  expect(loose.threadIds).toEqual([]);
-  expect(loose.ys[0]).toBeGreaterThan(result.looseTop);
-  expect(result.loose).toBe(1);
+  expect(dotOf(result, "Desk chair?").ys[0]).toBeGreaterThan(result.looseTop);
+  expect(result.loose).toBe(3);
+  expect(result.lanes[0]).toMatchObject({
+    entries: 2,
+    asking: 0,
+    until: null,
+  });
 });
 
 test("an Entry sits where it was written or completed, and an asking one at its Follow-up date", () => {
