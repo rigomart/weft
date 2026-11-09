@@ -44,4 +44,4 @@ Right after each action, read the box (the window's first `input`), focus, Add, 
 - The list is read again after each change notification. Wait on `document.querySelectorAll('[role=listitem]').length` before reading it.
 - Click the box before typing. With focus on the page body, typed letters can repeat, and `d` switches the theme (see the skill's Gotchas).
 - A closed Select or Combobox keeps its options in the DOM, so `find role option` can match a closed list's option. Wait until the option you want is visible (`checkVisibility()` returns true) before clicking it by name. After an option is picked, focus is back on the field's trigger, where Enter opens it again.
-- A popover or option list stays mounted while it animates out; wait on `!document.querySelector('[data-slot=popover-content]')` before the next click.
+- A closed popover stays in the DOM, marked `data-closed`, until its exit animation ends, and a window that other windows cover (`document.visibilityState` is `hidden`) may not run that animation for a long time. Wait on `!document.querySelector('[data-slot=popover-content]:not([data-closed])')`, not on the popover being gone.

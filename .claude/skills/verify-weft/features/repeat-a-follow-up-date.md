@@ -36,4 +36,5 @@ Read Now with this `eval`. Each item is `<body> | <rhythm and date> | <datetime>
 
 ## Traps
 
+- In a window that other windows cover (`document.visibilityState` is `hidden`), a pointer click on `combobox "Repeat"` can open the list and shut it again. Choose by keyboard instead: `focus` the select, press ArrowDown to open it, press ArrowDown until the option you want has focus (the first press only moves focus onto the chosen option), then Enter.
 - A closed Select keeps its options in the DOM, and the Time field's half hours are options too. Wait until the Repeat option you want is visible (`checkVisibility()` returns true) before clicking it by name, or a closed list's option can match first.
