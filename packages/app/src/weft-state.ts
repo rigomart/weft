@@ -1,4 +1,11 @@
-import type { CalendarDay, EntryListItem, Weft } from "@weft/contracts";
+import type {
+  CalendarDay,
+  Query,
+  QueryResults,
+  QueryType,
+  TableName,
+  Weft,
+} from "@weft/contracts";
 import { useEffect, useState } from "react";
 
 import { localDay } from "./follow-up-date.ts";
@@ -29,32 +36,47 @@ function useToday(): CalendarDay {
 
 /** Every Entry, read again after each change to the tables it comes from. */
 export function useEntries(weft: Weft) {
-  const [entries, setEntries] = useState<readonly EntryListItem[]>([]);
+  const { items, failure } = useRead(
+    weft,
+    "entries",
+    ["entries", "entryThreads"],
+    "entries",
+  );
+  return { entries: items, failure };
+}
+
+export function useThreads(weft: Weft) {
+  const { items, failure } = useRead(weft, "threads", ["threads"], "threads");
+  return { threads: items, failure };
+}
+
+function useRead<Q extends QueryType>(
+  weft: Weft,
+  type: Q,
+  tables: readonly TableName[],
+  noun: string,
+) {
+  const [items, setItems] = useState<QueryResults[Q]>([]);
   const [failure, setFailure] = useState<string>();
   useEffect(() => {
     let latest = 0;
     let stopped = false;
     function load() {
       const reading = ++latest;
-      weft.read({ type: "entries" }).then(
+      weft.read({ type } as Query).then(
         (read) => {
           if (stopped || reading !== latest) return;
-          setEntries(read);
+          setItems(read as QueryResults[Q]);
           setFailure(undefined);
         },
         (error: unknown) => {
           if (stopped || reading !== latest) return;
-          setFailure(`Weft couldn't show your entries: ${messageOf(error)}`);
+          setFailure(`Weft couldn't show your ${noun}: ${messageOf(error)}`);
         },
       );
     }
     const unsubscribe = weft.subscribe((change) => {
-      if (
-        change.tables.includes("entries") ||
-        change.tables.includes("entryThreads")
-      ) {
-        load();
-      }
+      if (change.tables.some((table) => tables.includes(table))) load();
     });
     load();
     return () => {
@@ -62,7 +84,7 @@ export function useEntries(weft: Weft) {
       unsubscribe();
     };
   }, [weft]);
-  return { entries, failure };
+  return { items, failure };
 }
 
 /** "Nov 8", with the year when it is not this year. */

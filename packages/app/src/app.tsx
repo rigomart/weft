@@ -1,4 +1,4 @@
-import type { EntryId, Weft } from "@weft/contracts";
+import type { EntryId, ThreadId, ThreadListItem, Weft } from "@weft/contracts";
 import { useState } from "react";
 
 import {
@@ -9,7 +9,8 @@ import {
 } from "./components/ui/tabs.tsx";
 import { EntryPanel } from "./entry-panel.tsx";
 import { NowView, useCaptureBox } from "./now.tsx";
-import { useEntries, useToday } from "./weft-state.ts";
+import { ThreadPanel } from "./thread-panel.tsx";
+import { useEntries, useThreads, useToday } from "./weft-state.ts";
 
 /** The three views, by their working names in GLOSSARY.md. */
 export const views = [
@@ -18,12 +19,26 @@ export const views = [
   { value: "history", label: "History" },
 ] as const;
 
+type Open =
+  | { readonly kind: "entry"; readonly entryId: EntryId }
+  | { readonly kind: "thread"; readonly threadId: ThreadId };
+
 export function App({ weft }: { weft: Weft }) {
   const captureBox = useCaptureBox(weft);
   const { entries, failure } = useEntries(weft);
+  const { threads, failure: threadsFailure } = useThreads(weft);
   const today = useToday();
-  const [openEntryId, setOpenEntryId] = useState<EntryId | null>(null);
-  const openEntry = entries.find((entry) => entry.entryId === openEntryId);
+  const [open, setOpen] = useState<Open | null>(null);
+  const openEntry =
+    open?.kind === "entry"
+      ? entries.find((entry) => entry.entryId === open.entryId)
+      : undefined;
+  const openThread =
+    open?.kind === "thread"
+      ? threads.find((thread) => thread.threadId === open.threadId)
+      : undefined;
+  const onOpenThread = (thread: ThreadListItem) =>
+    setOpen({ kind: "thread", threadId: thread.threadId });
 
   return (
     <div className="flex min-h-svh">
@@ -43,10 +58,12 @@ export function App({ weft }: { weft: Weft }) {
             weft={weft}
             captureBox={captureBox}
             entries={entries}
-            listFailure={failure}
+            threads={threads}
+            listFailure={failure ?? threadsFailure}
             today={today}
-            openEntryId={openEntry ? openEntry.entryId : null}
-            onOpen={setOpenEntryId}
+            openId={openEntry?.entryId ?? openThread?.threadId ?? null}
+            onOpen={(entryId) => setOpen({ kind: "entry", entryId })}
+            onOpenThread={onOpenThread}
           />
         </TabsContent>
         <TabsContent value="workspace" />
@@ -57,8 +74,18 @@ export function App({ weft }: { weft: Weft }) {
           key={openEntry.entryId}
           weft={weft}
           entry={openEntry}
+          threads={threads}
           today={today}
-          onClose={() => setOpenEntryId(null)}
+          onClose={() => setOpen(null)}
+          onOpenThread={onOpenThread}
+        />
+      )}
+      {openThread && (
+        <ThreadPanel
+          key={openThread.threadId}
+          weft={weft}
+          thread={openThread}
+          onClose={() => setOpen(null)}
         />
       )}
     </div>

@@ -5,6 +5,8 @@ import {
   type EntryId,
   type EntryListItem,
   type FollowUpDate,
+  type ThreadId,
+  type ThreadListItem,
   type Weft,
 } from "@weft/contracts";
 import { cn } from "cn";
@@ -46,7 +48,8 @@ import {
   timeName,
   weekdayOf,
 } from "./follow-up-date.ts";
-import { glance, type Glance, type GroupName } from "./glance.ts";
+import { glance, quietThreads, type Glance, type GroupName } from "./glance.ts";
+import { LooseChip, ThreadChip } from "./thread-chip.tsx";
 import { messageOf, writtenOn } from "./weft-state.ts";
 import {
   noRepeat,
@@ -146,22 +149,34 @@ export function NowView({
   weft,
   captureBox,
   entries,
+  threads,
   listFailure,
   today,
-  openEntryId,
+  openId,
   onOpen,
+  onOpenThread,
 }: {
   weft: Weft;
   captureBox: CaptureBox;
   entries: readonly EntryListItem[];
+  threads: readonly ThreadListItem[];
   listFailure: string | undefined;
   today: CalendarDay;
-  openEntryId: EntryId | null;
+  openId: EntryId | ThreadId | null;
   onOpen: (entryId: EntryId) => void;
+  onOpenThread: (thread: ThreadListItem) => void;
 }) {
   const { groups, loose } = useMemo(
     () => glance(entries, today),
     [entries, today],
+  );
+  const quiet = useMemo(
+    () => quietThreads(entries, threads),
+    [entries, threads],
+  );
+  const threadById = useMemo(
+    () => new Map(threads.map((thread) => [thread.threadId, thread])),
+    [threads],
   );
   const box = useRef<HTMLInputElement>(null);
   const {
@@ -193,8 +208,12 @@ export function NowView({
       quiet={quiet}
       completing={completing.has(entry.entryId)}
       onComplete={onComplete}
-      open={entry.entryId === openEntryId}
+      open={entry.entryId === openId}
       onOpen={onOpen}
+      threads={entry.threadIds.flatMap(
+        (threadId) => threadById.get(threadId) ?? [],
+      )}
+      onOpenThread={onOpenThread}
     />
   );
 
@@ -280,7 +299,7 @@ export function NowView({
                   key={entry.entryId}
                   role="listitem"
                   size="xs"
-                  className={rowClass(entry.entryId === openEntryId)}
+                  className={rowClass(entry.entryId === openId)}
                 >
                   <OpenButton entry={entry} onOpen={onOpen} />
                   <ItemContent>
@@ -297,6 +316,55 @@ export function NowView({
             </ItemGroup>
             {loose.length === 0 && (
               <p className="text-sm text-muted-foreground">Nothing loose.</p>
+            )}
+          </section>
+          <section
+            aria-labelledby={headingId("Quiet threads")}
+            className="mt-8 flex flex-col"
+          >
+            <GroupHeading
+              name="Quiet threads"
+              count={quiet.length}
+              className="text-base font-semibold"
+            />
+            <p className="text-sm text-muted-foreground">
+              Open, with nothing asking.
+            </p>
+            <Separator className="my-3" />
+            <ItemGroup aria-labelledby={headingId("Quiet threads")}>
+              {quiet.map(({ thread, lastActivity }) => (
+                <Item
+                  key={thread.threadId}
+                  role="listitem"
+                  size="xs"
+                  className={rowClass(thread.threadId === openId)}
+                >
+                  <button
+                    type="button"
+                    aria-label={`Open thread "${thread.name}"`}
+                    className="absolute inset-0 cursor-pointer rounded-[inherit] outline-none"
+                    onClick={() => onOpenThread(thread)}
+                  />
+                  <ItemContent className="items-start">
+                    <ThreadChip thread={thread} />
+                    {lastActivity ? (
+                      <time
+                        dateTime={lastActivity}
+                        className="text-xs text-muted-foreground"
+                      >
+                        last {writtenOn(lastActivity)}
+                      </time>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        nothing on it yet
+                      </span>
+                    )}
+                  </ItemContent>
+                </Item>
+              ))}
+            </ItemGroup>
+            {quiet.length === 0 && (
+              <p className="text-sm text-muted-foreground">No quiet threads.</p>
             )}
           </section>
         </aside>
@@ -389,6 +457,8 @@ function EntryRow({
   onComplete,
   open,
   onOpen,
+  threads,
+  onOpenThread,
 }: {
   entry: EntryListItem;
   group: GroupName;
@@ -398,6 +468,9 @@ function EntryRow({
   onComplete: (entry: EntryListItem, button: HTMLButtonElement) => void;
   open: boolean;
   onOpen: (entryId: EntryId) => void;
+  /** The Threads the Entry is on. */
+  threads: readonly ThreadListItem[];
+  onOpenThread: (thread: ThreadListItem) => void;
 }) {
   const date = entry.followUpDate!;
   return (
@@ -429,6 +502,19 @@ function EntryRow({
       </ItemMedia>
       <ItemContent className="min-w-40 @3xl:min-w-64">
         <span>{entry.body}</span>
+        <span className="flex flex-wrap gap-1">
+          {threads.length === 0 ? (
+            <LooseChip />
+          ) : (
+            threads.map((thread) => (
+              <ThreadChip
+                key={thread.threadId}
+                thread={thread}
+                onOpen={onOpenThread}
+              />
+            ))
+          )}
+        </span>
       </ItemContent>
       <ItemActions className="ms-auto text-muted-foreground">
         {date.repeat && (

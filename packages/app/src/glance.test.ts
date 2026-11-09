@@ -7,9 +7,10 @@ import {
   type EntryListItem,
   type Instant,
   type ThreadId,
+  type ThreadListItem,
 } from "@weft/contracts";
 
-import { glance, groupOf } from "./glance.ts";
+import { glance, groupOf, quietThreads } from "./glance.ts";
 
 const today = calendarDay("2026-11-08");
 let ms = Date.UTC(2026, 10, 8);
@@ -124,4 +125,41 @@ test("a put-away Entry, and an Update to one, shows nowhere", () => {
     ["Today", ["Kept"]],
   ]);
   expect(loose).toEqual([]);
+});
+
+test("Quiet threads are the open Threads with nothing asking, most recently active first", () => {
+  const thread = (name: string, resolved = false): ThreadListItem => ({
+    threadId: makeId<"thread">(ms++, () => new Uint8Array(10)),
+    name,
+    resolvedAt: resolved ? ("2026-11-08T10:00:00.000Z" as Instant) : null,
+  });
+  const teeth = thread("Teeth");
+  const sleep = thread("Sleep");
+  const work = thread("Work stress");
+  const car = thread("Replace the car", true);
+  const empty = thread("Garden");
+  const dentist = entry("Dentist: grinding teeth", {
+    threadIds: [teeth.threadId, sleep.threadId],
+  });
+  const read = newestFirst(
+    dentist,
+    entry("Night guard", { day: "2026-11-20", threadIds: [teeth.threadId] }),
+    entry("Launch pushed again", { threadIds: [work.threadId] }),
+    entry("Away, dated", {
+      putAway: true,
+      day: "2026-11-20",
+      threadIds: [work.threadId],
+    }),
+    entry("Bought the hybrid", { threadIds: [car.threadId] }),
+  );
+  expect(
+    quietThreads(read, [teeth, sleep, work, car, empty]).map((quiet) => [
+      quiet.thread.name,
+      quiet.lastActivity,
+    ]),
+  ).toEqual([
+    ["Work stress", read[1]!.writtenAt],
+    ["Sleep", dentist.writtenAt],
+    ["Garden", null],
+  ]);
 });

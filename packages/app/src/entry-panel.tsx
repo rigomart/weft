@@ -5,6 +5,8 @@ import {
   type Command,
   type EntryListItem,
   type FollowUpDate,
+  type ThreadId,
+  type ThreadListItem,
   type Weft,
 } from "@weft/contracts";
 import { CalendarIcon, CheckIcon, XIcon } from "lucide-react";
@@ -25,6 +27,7 @@ import {
 import { Button } from "./components/ui/button.tsx";
 import { FieldError } from "./components/ui/field.tsx";
 import { Separator } from "./components/ui/separator.tsx";
+import { SidePanel } from "./side-panel.tsx";
 import { Textarea } from "./components/ui/textarea.tsx";
 import { DayField, TimeField } from "./follow-up-date-fields.tsx";
 import { followUpLabel, weekdayOf } from "./follow-up-date.ts";
@@ -36,6 +39,8 @@ import {
   startRepeat,
   type RepeatDraft,
 } from "./repeat-field.tsx";
+import { ThreadChip } from "./thread-chip.tsx";
+import { ThreadPicker, type ThreadChoice } from "./thread-picker.tsx";
 import { messageOf, writtenOn } from "./weft-state.ts";
 
 type EntryCommand = Command extends infer C
@@ -51,13 +56,17 @@ type EntryCommand = Command extends infer C
 export function EntryPanel({
   weft,
   entry,
+  threads,
   today,
   onClose,
+  onOpenThread,
 }: {
   weft: Weft;
   entry: EntryListItem;
+  threads: readonly ThreadListItem[];
   today: CalendarDay;
   onClose: () => void;
+  onOpenThread: (thread: ThreadListItem) => void;
 }) {
   const [failure, setFailure] = useState<string>();
   const complete = useMemo(() => createCompletion(weft), [weft]);
@@ -77,6 +86,37 @@ export function EntryPanel({
     }
   }
 
+  const puttingOnThread = useRef(false);
+
+  async function putOnThread(choice: ThreadChoice) {
+    if (puttingOnThread.current) return;
+    puttingOnThread.current = true;
+    try {
+      if (choice.kind === "thread") {
+        await run({
+          type: "put entry on thread",
+          threadId: choice.thread.threadId,
+        });
+        return;
+      }
+      const threadId = newId("thread");
+      try {
+        await weft.run({
+          type: "start thread",
+          eventId: newId("event"),
+          threadId,
+          name: choice.name,
+        });
+      } catch (error) {
+        setFailure(failureMessage(error));
+        return;
+      }
+      await run({ type: "put entry on thread", threadId });
+    } finally {
+      puttingOnThread.current = false;
+    }
+  }
+
   async function onComplete() {
     if (entry.followUpDate === null) return;
     try {
@@ -87,27 +127,12 @@ export function EntryPanel({
     }
   }
 
-  useCloseOnEscape(onClose);
-
   return (
-    <aside
-      aria-label={panelTitle(entry)}
-      className="sticky top-0 flex h-svh w-[25rem] shrink-0 flex-col gap-4 overflow-y-auto border-s bg-card px-5 pt-4 pb-6 text-card-foreground"
+    <SidePanel
+      title={panelTitle(entry)}
+      label={panelTitle(entry)}
+      onClose={onClose}
     >
-      <header className="flex items-center justify-between gap-2">
-        <h2 className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
-          {panelTitle(entry)}
-        </h2>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Close"
-          onClick={onClose}
-          className="-me-2"
-        >
-          <XIcon />
-        </Button>
-      </header>
       <BodyField
         entry={entry}
         onSave={(body) => run({ type: "edit entry", body })}
@@ -120,6 +145,15 @@ export function EntryPanel({
         }
         onClear={() => run({ type: "clear follow-up date" })}
         onComplete={onComplete}
+      />
+      <ThreadsSection
+        threads={threads}
+        on={entry.threadIds}
+        onOpen={onOpenThread}
+        onTakeOff={(thread) =>
+          run({ type: "take entry off thread", threadId: thread.threadId })
+        }
+        onPutOn={putOnThread}
       />
       <FieldError>{failure}</FieldError>
       <Separator />
@@ -168,7 +202,58 @@ export function EntryPanel({
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </aside>
+    </SidePanel>
+  );
+}
+
+function ThreadsSection({
+  threads,
+  on,
+  onOpen,
+  onTakeOff,
+  onPutOn,
+}: {
+  threads: readonly ThreadListItem[];
+  on: readonly ThreadId[];
+  onOpen: (thread: ThreadListItem) => void;
+  onTakeOff: (thread: ThreadListItem) => void;
+  onPutOn: (choice: ThreadChoice) => void;
+}) {
+  const onThreads = on.flatMap(
+    (threadId) => threads.find((thread) => thread.threadId === threadId) ?? [],
+  );
+  return (
+    <section aria-labelledby="entry-threads" className="flex flex-col gap-2">
+      <h3
+        id="entry-threads"
+        className="text-xs font-medium tracking-wider text-muted-foreground uppercase"
+      >
+        Threads
+      </h3>
+      {onThreads.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Loose. That's fine.</p>
+      ) : (
+        <ul className="flex flex-col">
+          {onThreads.map((thread) => (
+            <li
+              key={thread.threadId}
+              className="flex items-center justify-between gap-2 border-b py-1.5"
+            >
+              <ThreadChip thread={thread} onOpen={onOpen} />
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label={`Take off "${thread.name}"`}
+                onClick={() => onTakeOff(thread)}
+              >
+                <XIcon />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <ThreadPicker threads={threads} on={on} onChoose={onPutOn} />
+    </section>
   );
 }
 
@@ -366,30 +451,6 @@ function useRepeatDraft(date: FollowUpDate | null) {
   const [draft, setDraft] = useState(() => draftOf(date?.repeat ?? null));
   useEffect(() => setDraft(draftOf(date?.repeat ?? null)), [stored]);
   return [draft, setDraft] as const;
-}
-
-/** Escape closes the panel, unless it is closing a menu, a picker or a dialog first. */
-function useCloseOnEscape(onClose: () => void) {
-  const latest = useRef(onClose);
-  latest.current = onClose;
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      if (
-        document.querySelector("[data-open]:not([data-slot=tooltip-content])")
-      ) {
-        return;
-      }
-      const active = document.activeElement;
-      if (active instanceof HTMLElement && active.matches("input, textarea")) {
-        active.blur();
-      }
-      latest.current();
-    }
-    // Capturing, so a popup that closes on this Escape is still open when it is checked.
-    window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, []);
 }
 
 function failureMessage(error: unknown): string {
