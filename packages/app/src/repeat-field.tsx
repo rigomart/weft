@@ -79,7 +79,6 @@ const kinds: readonly { value: RepeatDraft["kind"]; label: string }[] = [
 
 const weekdays = [0, 1, 2, 3, 4, 5, 6];
 
-/** The Repeat as a select, then its rhythm: every N days, the weekdays, or the day of the month. */
 export function RepeatField({
   value,
   onKind,
@@ -115,7 +114,7 @@ export function RepeatField({
           {value.kind === "days" && (
             <>
               every
-              <NumberField
+              <DigitsField
                 label="Days between"
                 value={value.every}
                 onChange={(every) => onChange({ ...value, every })}
@@ -152,7 +151,7 @@ export function RepeatField({
           {value.kind === "monthly" && (
             <>
               on day
-              <NumberField
+              <DigitsField
                 label="Day of the month"
                 value={value.day}
                 onChange={(day) => onChange({ ...value, day })}
@@ -165,8 +164,7 @@ export function RepeatField({
   );
 }
 
-/** A whole number typed as digits; the draft checks its range. */
-function NumberField({
+function DigitsField({
   label,
   value,
   onChange,

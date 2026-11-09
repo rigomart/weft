@@ -26,10 +26,7 @@ import {
   timeName,
 } from "./follow-up-date.ts";
 
-/**
- * The Follow-up date's day: a popover with Today, Tomorrow and Next week beside a calendar, and
- * "No date" once a day is chosen. `trigger` is the button that opens it.
- */
+/** The Follow-up date's day, "" for none; `trigger` is the button that opens its popover. */
 export function DayField({
   value,
   onChange,
@@ -82,7 +79,7 @@ export function DayField({
         </div>
         <Calendar
           mode="single"
-          // Clicking the chosen day keeps it; "No date" clears it.
+          // Without required, react-day-picker unselects the chosen day when it is clicked again.
           required
           selected={value ? dateOf(value) : undefined}
           defaultMonth={value ? dateOf(value) : undefined}
@@ -94,10 +91,7 @@ export function DayField({
   );
 }
 
-/**
- * The Follow-up date's time: the common half hours, and whatever is typed read as a time ("930",
- * "2pm"), offered first so Enter takes it.
- */
+/** A time picked from the half hours or typed ("930", "2pm"); value and onChange use "HH:MM", "" for none. */
 export function TimeField({
   value,
   onChange,
@@ -106,7 +100,7 @@ export function TimeField({
   onChange: (time: string) => void;
 }) {
   const [query, setQuery] = useState("");
-  // Once a time is chosen the box shows it; that is not a search.
+  // The Combobox puts the chosen time's label in the input; that is not a search.
   const typed = query.trim() === (value ? timeName(value) : "") ? "" : query;
   const items = useMemo(() => {
     const q = typed.trim();
@@ -117,6 +111,13 @@ export function TimeField({
     );
     return time && !near.includes(time) ? [time, ...near] : near;
   }, [typed]);
+
+  function keepTypedTimeOnLeave(open: boolean, { reason }: { reason: string }) {
+    if (open || (reason !== "outside-press" && reason !== "focus-out")) return;
+    const time = parseTime(typed);
+    if (time) onChange(time);
+  }
+
   return (
     <Combobox
       items={items}
@@ -124,14 +125,7 @@ export function TimeField({
       value={value || null}
       onValueChange={(time) => onChange((time as string | null) ?? "")}
       onInputValueChange={setQuery}
-      // A time typed and then left, by clicking elsewhere or tabbing on, is kept as typed.
-      onOpenChange={(open, { reason }) => {
-        if (open || (reason !== "outside-press" && reason !== "focus-out")) {
-          return;
-        }
-        const time = parseTime(typed);
-        if (time) onChange(time);
-      }}
+      onOpenChange={keepTypedTimeOnLeave}
       itemToStringLabel={(time: string) => timeName(time)}
       autoHighlight
     >

@@ -45,9 +45,10 @@ import {
   followUpLabel,
   localDay,
   repeatLabel,
+  timeName,
   weekdayOf,
 } from "./follow-up-date.ts";
-import { glance, type GroupName } from "./glance.ts";
+import { glance, type Glance, type GroupName } from "./glance.ts";
 import {
   noRepeat,
   RepeatField,
@@ -57,8 +58,7 @@ import {
 } from "./repeat-field.tsx";
 
 /**
- * What the capture box holds: its text, the Follow-up date's day and time (`""` when none is
- * chosen) and its Repeat, the last failure, and the commands waiting to be retried.
+ * The capture box's draft, its last failure and the commands waiting to be retried.
  * The app keeps it above the tabs, so changing tabs loses none of it.
  */
 export function useCaptureBox(weft: Weft) {
@@ -95,7 +95,6 @@ export function useCaptureBox(weft: Weft) {
     text,
     setText: setField("text"),
     day,
-    /** Clearing the day clears its time and Repeat too. */
     setDay: (day: CalendarDay | "") =>
       setDraft((current) =>
         day
@@ -144,10 +143,6 @@ function chosenDay(day: CalendarDay | "") {
 
 export type CaptureBox = ReturnType<typeof useCaptureBox>;
 
-/**
- * Now: today's date, the capture box, Late and Today in full, then Tomorrow, This week and Later,
- * with Loose beside them.
- */
 export function NowView({
   weft,
   captureBox,
@@ -167,41 +162,15 @@ export function NowView({
     failure: completeFailure,
     complete,
   } = useCompletion(weft);
-  const comingBack = useRef<HTMLDivElement>(null);
-  const refocus = useRef<{ button: HTMLButtonElement; at: number } | null>(
-    null,
+  const { comingBack, onComplete } = useFocusAfterCompleting(
+    complete,
+    groups,
+    box,
   );
   const asking = groups.filter(
     (group) => group.name === "Late" || group.name === "Today",
   );
   const comingUp = groups.filter((group) => !asking.includes(group));
-
-  async function onComplete(entry: EntryListItem, button: HTMLButtonElement) {
-    if (document.activeElement === button) {
-      refocus.current = { button, at: completeButtons().indexOf(button) };
-    }
-    if (!(await complete(entry)) && refocus.current?.button === button) {
-      refocus.current = null;
-    }
-  }
-
-  function completeButtons(): HTMLButtonElement[] {
-    return [
-      ...(comingBack.current?.querySelectorAll<HTMLButtonElement>(
-        "button[data-complete]",
-      ) ?? []),
-    ];
-  }
-
-  // A completed row unmounts with its focused ✓: focus the ✓ that took its place, or the box.
-  useLayoutEffect(() => {
-    const pending = refocus.current;
-    if (!pending || pending.button.isConnected) return;
-    refocus.current = null;
-    if (document.activeElement !== document.body) return;
-    const buttons = completeButtons();
-    (buttons[Math.min(pending.at, buttons.length - 1)] ?? box.current)?.focus();
-  }, [groups]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -321,7 +290,6 @@ export function NowView({
   );
 }
 
-/** The capture box, with the Follow-up date's time and Repeat once a day is chosen. */
 function CaptureForm({
   captureBox: {
     text,
@@ -390,7 +358,6 @@ function CaptureForm({
   );
 }
 
-/** "tomorrow", "Thu", "Nov 29": the day as a row would say it. */
 function backLabel(day: CalendarDay, today: CalendarDay): string {
   return followUpLabel({ day, time: null, repeat: null }, today).replace(
     /^(Today|Tomorrow)/,
@@ -398,10 +365,6 @@ function backLabel(day: CalendarDay, today: CalendarDay): string {
   );
 }
 
-/**
- * One Entry coming back: its ✓, its body, and its rhythm and date. Today and Tomorrow show only a
- * time, as their group already says the day. Tomorrow, This week and Later are `quiet`.
- */
 function EntryRow({
   entry,
   group,
@@ -418,11 +381,6 @@ function EntryRow({
   onComplete: (entry: EntryListItem, button: HTMLButtonElement) => void;
 }) {
   const date = entry.followUpDate!;
-  const label = followUpLabel(date, today);
-  const when =
-    group === "Today" || group === "Tomorrow"
-      ? (date.time && label.replace(/^[^,]*, /, "")) || ""
-      : label;
   return (
     <Item
       role="listitem"
@@ -462,11 +420,61 @@ function EntryRow({
           dateTime={followUpDateTime(date)}
           className={cn(group === "Late" && "text-late")}
         >
-          {when}
+          {dateUnlessGroupSaysIt(date, group, today)}
         </time>
       </ItemActions>
     </Item>
   );
+}
+
+function useFocusAfterCompleting(
+  complete: (entry: EntryListItem) => Promise<boolean>,
+  groups: Glance["groups"],
+  box: RefObject<HTMLInputElement | null>,
+) {
+  const comingBack = useRef<HTMLDivElement>(null);
+  const refocus = useRef<{ button: HTMLButtonElement; at: number } | null>(
+    null,
+  );
+
+  function completeButtons(): HTMLButtonElement[] {
+    return [
+      ...(comingBack.current?.querySelectorAll<HTMLButtonElement>(
+        "button[data-complete]",
+      ) ?? []),
+    ];
+  }
+
+  async function onComplete(entry: EntryListItem, button: HTMLButtonElement) {
+    if (document.activeElement === button) {
+      refocus.current = { button, at: completeButtons().indexOf(button) };
+    }
+    if (!(await complete(entry)) && refocus.current?.button === button) {
+      refocus.current = null;
+    }
+  }
+
+  useLayoutEffect(() => {
+    const pending = refocus.current;
+    if (!pending || pending.button.isConnected) return;
+    refocus.current = null;
+    if (document.activeElement !== document.body) return;
+    const buttons = completeButtons();
+    (buttons[Math.min(pending.at, buttons.length - 1)] ?? box.current)?.focus();
+  }, [groups]);
+
+  return { comingBack, onComplete };
+}
+
+function dateUnlessGroupSaysIt(
+  date: FollowUpDate,
+  group: GroupName,
+  today: CalendarDay,
+): string {
+  if (group !== "Today" && group !== "Tomorrow") {
+    return followUpLabel(date, today);
+  }
+  return date.time === null ? "" : timeName(date.time);
 }
 
 function useCompletion(weft: Weft) {

@@ -55,7 +55,7 @@ function utcMs(day: CalendarDay): number {
   return Date.parse(`${day}T00:00:00Z`);
 }
 
-/** A Repeat's rhythm, as a row on Now shows it after ↻: "every Sunday", "every 3 days". */
+/** A Repeat's rhythm: "every Sunday", "every 3 days". */
 export function repeatLabel(repeat: Repeat, locale?: string): string {
   switch (repeat.kind) {
     case "days":
@@ -126,7 +126,7 @@ export function dayName(
   });
 }
 
-/** "9:30" from "09:30", as a card shows a time. */
+/** "9:30" from "09:30". */
 export function timeName(time: string): string {
   return time.replace(/^0/, "");
 }
@@ -152,14 +152,13 @@ export function parseTime(text: string): string | undefined {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
-/** Every half hour from 7:00 to 21:30: the times offered before anything is typed. */
+/** Every half hour from 7:00 to 21:30. */
 export const commonTimes: readonly string[] = Array.from(
   { length: 30 },
   (_, i) =>
     `${String(7 + Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`,
 );
 
-/** The days offered before the calendar: today, tomorrow, and a week from today. */
 export function quickDays(today: CalendarDay) {
   return [
     { label: "Today", day: today },
