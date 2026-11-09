@@ -1,5 +1,4 @@
 import {
-  calendarDay,
   timeOfDay,
   WeftError,
   type CalendarDay,
@@ -9,6 +8,7 @@ import {
   type Weft,
 } from "@weft/contracts";
 import { cn } from "cn";
+import { CalendarIcon, CheckIcon } from "lucide-react";
 import {
   useEffect,
   useLayoutEffect,
@@ -16,26 +16,38 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type RefObject,
 } from "react";
 
 import { createCapture } from "./capture.ts";
 import { createCompletion } from "./complete.ts";
 import { Button } from "./components/ui/button.tsx";
-import { Field, FieldError } from "./components/ui/field.tsx";
+import { Card, CardContent } from "./components/ui/card.tsx";
+import { FieldError } from "./components/ui/field.tsx";
 import { Input } from "./components/ui/input.tsx";
 import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemGroup,
+  ItemMedia,
+} from "./components/ui/item.tsx";
+import { Separator } from "./components/ui/separator.tsx";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./components/ui/tooltip.tsx";
+import { DayField, TimeField } from "./follow-up-date-fields.tsx";
+import {
+  dayName,
   followUpLabel,
   localDay,
   repeatLabel,
   weekdayOf,
 } from "./follow-up-date.ts";
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-} from "./components/ui/item.tsx";
-import { glance } from "./glance.ts";
+import { glance, type GroupName } from "./glance.ts";
 import {
   noRepeat,
   RepeatField,
@@ -45,9 +57,8 @@ import {
 } from "./repeat-field.tsx";
 
 /**
- * What the capture box holds: its text, the Follow-up date's day and time as the date and time
- * fields give them (`""` when empty) and its Repeat, the last failure, and the commands waiting to
- * be retried.
+ * What the capture box holds: its text, the Follow-up date's day and time (`""` when none is
+ * chosen) and its Repeat, the last failure, and the commands waiting to be retried.
  * The app keeps it above the tabs, so changing tabs loses none of it.
  */
 export function useCaptureBox(weft: Weft) {
@@ -56,8 +67,10 @@ export function useCaptureBox(weft: Weft) {
   const [failure, setFailure] = useState<string>();
   const { text, day, time, repeat } = draft;
   const followUpDate = followUpDateOf(draft);
-  const setField = (field: "text" | "day" | "time") => (value: string) =>
-    setDraft((current) => ({ ...current, [field]: value }));
+  const setField =
+    <Field extends "text" | "time">(field: Field) =>
+    (value: Draft[Field]) =>
+      setDraft((current) => ({ ...current, [field]: value }));
 
   /** Resolves to true once the Entry is written, with its Follow-up date when it has one. */
   async function submit(): Promise<boolean> {
@@ -82,7 +95,13 @@ export function useCaptureBox(weft: Weft) {
     text,
     setText: setField("text"),
     day,
-    setDay: setField("day"),
+    /** Clearing the day clears its time and Repeat too. */
+    setDay: (day: CalendarDay | "") =>
+      setDraft((current) =>
+        day
+          ? { ...current, day }
+          : { ...current, day, time: "", repeat: noRepeat },
+      ),
     time,
     setTime: setField("time"),
     repeat,
@@ -101,7 +120,7 @@ export function useCaptureBox(weft: Weft) {
 
 interface Draft {
   readonly text: string;
-  readonly day: string;
+  readonly day: CalendarDay | "";
   readonly time: string;
   readonly repeat: RepeatDraft;
 }
@@ -114,48 +133,24 @@ function followUpDateOf({
   repeat,
 }: Draft): FollowUpDate | null | "incomplete" {
   if (!day) return null;
-  const calendar = calendarDayOf(day);
   const chosen = repeatOf(repeat);
-  if (calendar === undefined || chosen === "incomplete") return "incomplete";
-  return {
-    day: calendar,
-    time: time ? timeOfDay(time) : null,
-    repeat: chosen,
-  };
+  if (chosen === "incomplete") return "incomplete";
+  return { day, time: time ? timeOfDay(time) : null, repeat: chosen };
 }
 
-/** The date input reports partial years such as `0002` while it is typed. */
-function calendarDayOf(text: string): CalendarDay | undefined {
-  try {
-    return calendarDay(text);
-  } catch {
-    return undefined;
-  }
-}
-
-function chosenDay(text: string) {
-  const day = calendarDayOf(text);
+function chosenDay(day: CalendarDay | "") {
   return day ? { weekday: weekdayOf(day), date: Number(day.slice(8)) } : null;
 }
 
 export type CaptureBox = ReturnType<typeof useCaptureBox>;
 
+/**
+ * Now: today's date, the capture box, Late and Today in full, then Tomorrow, This week and Later,
+ * with Loose beside them.
+ */
 export function NowView({
   weft,
-  captureBox: {
-    text,
-    setText,
-    day,
-    setDay,
-    time,
-    setTime,
-    repeat,
-    setRepeat,
-    chooseRepeatKind,
-    ready,
-    failure,
-    submit,
-  },
+  captureBox,
 }: {
   weft: Weft;
   captureBox: CaptureBox;
@@ -176,6 +171,10 @@ export function NowView({
   const refocus = useRef<{ button: HTMLButtonElement; at: number } | null>(
     null,
   );
+  const asking = groups.filter(
+    (group) => group.name === "Late" || group.name === "Today",
+  );
+  const comingUp = groups.filter((group) => !asking.includes(group));
 
   async function onComplete(entry: EntryListItem, button: HTMLButtonElement) {
     if (document.activeElement === button) {
@@ -194,7 +193,7 @@ export function NowView({
     ];
   }
 
-  // A completed card unmounts with its focused ✓: focus the ✓ that took its place, or the box.
+  // A completed row unmounts with its focused ✓: focus the ✓ that took its place, or the box.
   useLayoutEffect(() => {
     const pending = refocus.current;
     if (!pending || pending.button.isConnected) return;
@@ -206,13 +205,150 @@ export function NowView({
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (await submit()) box.current?.focus();
+    if (await captureBox.submit()) box.current?.focus();
   }
 
+  const row = (entry: EntryListItem, group: GroupName, quiet = false) => (
+    <EntryRow
+      key={entry.entryId}
+      entry={entry}
+      group={group}
+      today={today}
+      quiet={quiet}
+      completing={completing.has(entry.entryId)}
+      onComplete={onComplete}
+    />
+  );
+
   return (
-    <div className="flex flex-col gap-4 p-2">
-      <form onSubmit={onSubmit} className="flex flex-col gap-2">
-        <Field orientation="horizontal" data-invalid={failure !== undefined}>
+    <TooltipProvider>
+      <div className="mx-auto grid max-w-[1060px] gap-x-12 gap-y-8 px-8 pt-6 pb-16 md:grid-cols-[minmax(0,1fr)_16.5rem]">
+        <main className="flex min-w-0 flex-col">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {dayName(today, today, true)}
+          </h1>
+          <CaptureForm
+            captureBox={captureBox}
+            today={today}
+            box={box}
+            onSubmit={onSubmit}
+          />
+          <FieldError className="mt-3">{listFailure}</FieldError>
+          <FieldError className="mt-3">{completeFailure}</FieldError>
+          <div ref={comingBack} className="mt-6 flex flex-col gap-6">
+            {groups.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Nothing is coming back.
+              </p>
+            )}
+            {asking.map((group) => (
+              <section
+                key={group.name}
+                aria-labelledby={headingId(group.name)}
+                className="flex flex-col gap-2"
+              >
+                <GroupHeading
+                  name={group.name}
+                  count={group.entries.length}
+                  className="text-base font-semibold"
+                />
+                <ItemGroup aria-labelledby={headingId(group.name)}>
+                  {group.entries.map((entry) => row(entry, group.name))}
+                </ItemGroup>
+              </section>
+            ))}
+            {comingUp.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {asking.length > 0 && <Separator />}
+                {comingUp.map((group) => (
+                  <section
+                    key={group.name}
+                    aria-labelledby={headingId(group.name)}
+                    className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-x-4"
+                  >
+                    <GroupHeading
+                      name={group.name}
+                      count={group.entries.length}
+                      className="pt-2.5 text-sm font-medium"
+                    />
+                    <ItemGroup aria-labelledby={headingId(group.name)}>
+                      {group.entries.map((entry) =>
+                        row(entry, group.name, true),
+                      )}
+                    </ItemGroup>
+                  </section>
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
+        <aside>
+          <section
+            aria-labelledby={headingId("Loose")}
+            className="flex flex-col"
+          >
+            <GroupHeading
+              name="Loose"
+              count={loose.length}
+              className="text-base font-semibold"
+            />
+            <p className="text-sm text-muted-foreground">
+              On no thread, and fine as they are.
+            </p>
+            <Separator className="my-3" />
+            <ItemGroup aria-labelledby={headingId("Loose")}>
+              {loose.map((entry) => (
+                <Item key={entry.entryId} role="listitem" size="xs">
+                  <ItemContent>
+                    <span>{entry.body}</span>
+                    <time
+                      dateTime={entry.writtenAt}
+                      className="text-xs text-muted-foreground"
+                    >
+                      {writtenOn(entry.writtenAt)}
+                    </time>
+                  </ItemContent>
+                </Item>
+              ))}
+            </ItemGroup>
+            {loose.length === 0 && (
+              <p className="text-sm text-muted-foreground">Nothing loose.</p>
+            )}
+          </section>
+        </aside>
+      </div>
+    </TooltipProvider>
+  );
+}
+
+/** The capture box, with the Follow-up date's time and Repeat once a day is chosen. */
+function CaptureForm({
+  captureBox: {
+    text,
+    setText,
+    day,
+    setDay,
+    time,
+    setTime,
+    repeat,
+    setRepeat,
+    chooseRepeatKind,
+    ready,
+    failure,
+  },
+  today,
+  box,
+  onSubmit,
+}: {
+  captureBox: CaptureBox;
+  today: CalendarDay;
+  box: RefObject<HTMLInputElement | null>;
+  onSubmit: (event: FormEvent) => void;
+}) {
+  return (
+    <Card size="sm" className="mt-4">
+      <CardContent>
+        <form onSubmit={onSubmit} className="flex flex-col gap-3">
           <Input
             ref={box}
             aria-label="What's on your mind?"
@@ -221,136 +357,115 @@ export function NowView({
             onChange={(event) => setText(event.target.value)}
             aria-invalid={failure !== undefined}
           />
-          <Button type="submit" disabled={!ready}>
-            Add
-          </Button>
-        </Field>
-        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <label htmlFor="capture-day">Bring back on</label>
-          <Input
-            id="capture-day"
-            type="date"
-            className="w-auto dark:scheme-dark"
-            value={day}
-            onChange={(event) => setDay(event.target.value)}
-          />
-          <label htmlFor="capture-time">at</label>
-          <Input
-            id="capture-time"
-            type="time"
-            className="w-auto dark:scheme-dark"
-            disabled={!day}
-            value={time}
-            onChange={(event) => setTime(event.target.value)}
-          />
-          <RepeatField
-            value={repeat}
-            disabled={!day}
-            onKind={chooseRepeatKind}
-            onChange={setRepeat}
-          />
-        </div>
-        <FieldError>{failure}</FieldError>
-      </form>
-      <FieldError>{listFailure}</FieldError>
-      <FieldError>{completeFailure}</FieldError>
-      <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_18rem]">
-        <div ref={comingBack} className="flex flex-col gap-5">
-          {groups.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              Nothing is coming back.
-            </p>
-          )}
-          {groups.map((group) => (
-            <section
-              key={group.name}
-              aria-labelledby={headingId(group.name)}
-              className="flex flex-col gap-2"
-            >
-              <GroupHeading name={group.name} count={group.entries.length} />
-              <ItemGroup
-                aria-labelledby={headingId(group.name)}
-                className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-2"
-              >
-                {group.entries.map((entry) => (
-                  <Item
-                    key={entry.entryId}
-                    role="listitem"
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "relative flex-col items-stretch gap-1",
-                      group.name === "Late" && "border-late/40 bg-late/5",
-                    )}
-                  >
-                    <ItemContent className="pr-7">{entry.body}</ItemContent>
-                    <Button
-                      variant="outline"
-                      size="icon-xs"
-                      className="absolute top-2 right-2 rounded-full text-muted-foreground hover:text-foreground"
-                      aria-label={`Complete "${entry.body}"`}
-                      title="Complete"
-                      disabled={completing.has(entry.entryId)}
-                      data-complete=""
-                      onClick={(event) =>
-                        onComplete(entry, event.currentTarget)
-                      }
-                    >
-                      ✓
-                    </Button>
-                    <ItemDescription
-                      className={cn(
-                        "self-end text-xs",
-                        group.name === "Late" && "text-late",
-                      )}
-                    >
-                      {entry.followUpDate!.repeat && (
-                        <span className="me-2">
-                          <span aria-hidden="true">↻ </span>
-                          {repeatLabel(entry.followUpDate!.repeat)}
-                        </span>
-                      )}
-                      <time dateTime={followUpDateTime(entry.followUpDate!)}>
-                        {followUpLabel(entry.followUpDate!, today)}
-                      </time>
-                    </ItemDescription>
-                  </Item>
-                ))}
-              </ItemGroup>
-            </section>
-          ))}
-        </div>
-        <section
-          aria-labelledby={headingId("Loose")}
-          className="flex flex-col gap-2"
-        >
-          <GroupHeading name="Loose" count={loose.length} />
-          <p className="text-xs text-muted-foreground">
-            On no thread, and fine as they are.
-          </p>
-          <ItemGroup aria-labelledby={headingId("Loose")} className="gap-1.5">
-            {loose.map((entry) => (
-              <Item
-                key={entry.entryId}
-                role="listitem"
+          <div className="flex flex-wrap items-center gap-2">
+            <DayField
+              value={day}
+              onChange={setDay}
+              today={today}
+              trigger={
+                <Button type="button" variant={day ? "secondary" : "ghost"}>
+                  <CalendarIcon />
+                  {day ? `Back ${backLabel(day, today)}` : "Bring back…"}
+                </Button>
+              }
+            />
+            {day && (
+              <>
+                <TimeField value={time} onChange={setTime} />
+                <RepeatField
+                  value={repeat}
+                  onKind={chooseRepeatKind}
+                  onChange={setRepeat}
+                />
+              </>
+            )}
+            <Button type="submit" disabled={!ready} className="ms-auto">
+              Add
+            </Button>
+          </div>
+          <FieldError>{failure}</FieldError>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** "tomorrow", "Thu", "Nov 29": the day as a row would say it. */
+function backLabel(day: CalendarDay, today: CalendarDay): string {
+  return followUpLabel({ day, time: null, repeat: null }, today).replace(
+    /^(Today|Tomorrow)/,
+    (word) => word.toLowerCase(),
+  );
+}
+
+/**
+ * One Entry coming back: its ✓, its body, and its rhythm and date. Today and Tomorrow show only a
+ * time, as their group already says the day. Tomorrow, This week and Later are `quiet`.
+ */
+function EntryRow({
+  entry,
+  group,
+  today,
+  quiet,
+  completing,
+  onComplete,
+}: {
+  entry: EntryListItem;
+  group: GroupName;
+  today: CalendarDay;
+  quiet: boolean;
+  completing: boolean;
+  onComplete: (entry: EntryListItem, button: HTMLButtonElement) => void;
+}) {
+  const date = entry.followUpDate!;
+  const label = followUpLabel(date, today);
+  const when =
+    group === "Today" || group === "Tomorrow"
+      ? (date.time && label.replace(/^[^,]*, /, "")) || ""
+      : label;
+  return (
+    <Item
+      role="listitem"
+      variant={quiet ? "default" : "outline"}
+      size={quiet ? "xs" : "sm"}
+    >
+      <ItemMedia>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
                 variant="outline"
-                size="xs"
-              >
-                <ItemContent className="line-clamp-2">{entry.body}</ItemContent>
-                <ItemDescription className="text-xs">
-                  <time dateTime={entry.writtenAt}>
-                    {writtenOn(entry.writtenAt)}
-                  </time>
-                </ItemDescription>
-              </Item>
-            ))}
-          </ItemGroup>
-          {loose.length === 0 && (
-            <p className="text-sm text-muted-foreground">Nothing loose.</p>
-          )}
-        </section>
-      </div>
-    </div>
+                size={quiet ? "icon-xs" : "icon-sm"}
+                aria-label={`Complete "${entry.body}"`}
+                data-complete=""
+                disabled={completing}
+                onClick={(event) => onComplete(entry, event.currentTarget)}
+              />
+            }
+          >
+            <CheckIcon />
+          </TooltipTrigger>
+          <TooltipContent>Complete</TooltipContent>
+        </Tooltip>
+      </ItemMedia>
+      <ItemContent className="min-w-64">
+        <span>{entry.body}</span>
+      </ItemContent>
+      <ItemActions className="ms-auto text-muted-foreground">
+        {date.repeat && (
+          <span>
+            <span aria-hidden="true">↻ </span>
+            {repeatLabel(date.repeat)}
+          </span>
+        )}
+        <time
+          dateTime={followUpDateTime(date)}
+          className={cn(group === "Late" && "text-late")}
+        >
+          {when}
+        </time>
+      </ItemActions>
+    </Item>
   );
 }
 
@@ -389,19 +504,26 @@ function useCompletion(weft: Weft) {
   return { completing, failure, complete };
 }
 
-function GroupHeading({ name, count }: { name: string; count: number }) {
+function GroupHeading({
+  name,
+  count,
+  className,
+}: {
+  name: string;
+  count: number;
+  className: string;
+}) {
   return (
     <h2
       id={headingId(name)}
       className={cn(
-        "flex items-baseline gap-2 border-b pb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase",
-        (name === "Today" || name === "Late") && "text-sm",
-        name === "Today" && "text-foreground",
+        "flex items-baseline gap-2",
         name === "Late" && "text-late",
+        className,
       )}
     >
       <span>{name}</span>
-      <span className="font-normal tabular-nums">{count}</span>
+      <span className="text-sm font-normal text-muted-foreground">{count}</span>
     </h2>
   );
 }

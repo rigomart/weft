@@ -1,7 +1,14 @@
 import type { Repeat } from "@weft/contracts";
 
-import { Button } from "./components/ui/button.tsx";
 import { Input } from "./components/ui/input.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./components/ui/select.tsx";
+import { ToggleGroup, ToggleGroupItem } from "./components/ui/toggle-group.tsx";
 import { weekdayName } from "./follow-up-date.ts";
 
 /** A Repeat as it is being chosen, with numbers as their fields give them. */
@@ -72,94 +79,109 @@ const kinds: readonly { value: RepeatDraft["kind"]; label: string }[] = [
 
 const weekdays = [0, 1, 2, 3, 4, 5, 6];
 
+/** The Repeat as a select, then its rhythm: every N days, the weekdays, or the day of the month. */
 export function RepeatField({
   value,
-  disabled,
   onKind,
   onChange,
 }: {
   value: RepeatDraft;
-  disabled: boolean;
   onKind: (kind: RepeatDraft["kind"]) => void;
   onChange: (value: RepeatDraft) => void;
 }) {
   return (
     <>
-      <select
-        aria-label="Repeat"
-        className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 dark:bg-input/30 dark:scheme-dark"
-        disabled={disabled}
+      <Select
+        items={kinds}
         value={value.kind}
-        onChange={(event) => onKind(event.target.value as RepeatDraft["kind"])}
+        onValueChange={(kind) => kind && onKind(kind)}
       >
-        {kinds.map((kind) => (
-          <option key={kind.value} value={kind.value}>
-            {kind.label}
-          </option>
-        ))}
-      </select>
-      {!disabled && value.kind === "days" && (
-        <>
-          <span>every</span>
-          <Input
-            aria-label="Days between"
-            type="number"
-            min={1}
-            max={365}
-            className="w-16"
-            value={value.every}
-            onChange={(event) =>
-              onChange({ ...value, every: event.target.value })
-            }
-          />
-          <span>days</span>
-        </>
-      )}
-      {!disabled && value.kind === "weekly" && (
-        <>
-          <span>on</span>
-          <span role="group" aria-label="Weekdays" className="flex gap-1">
-            {weekdays.map((weekday) => {
-              const on = value.weekdays.includes(weekday);
-              return (
-                <Button
-                  key={weekday}
-                  type="button"
-                  variant={on ? "default" : "outline"}
-                  size="xs"
-                  aria-pressed={on}
-                  onClick={() =>
-                    onChange({
-                      ...value,
-                      weekdays: on
-                        ? value.weekdays.filter((w) => w !== weekday)
-                        : [...value.weekdays, weekday],
-                    })
-                  }
-                >
-                  {weekdayName(weekday, "short")}
-                </Button>
-              );
-            })}
+        <SelectTrigger aria-label="Repeat">
+          <span aria-hidden="true" className="text-muted-foreground">
+            ↻
           </span>
-        </>
-      )}
-      {!disabled && value.kind === "monthly" && (
-        <>
-          <span>on day</span>
-          <Input
-            aria-label="Day of the month"
-            type="number"
-            min={1}
-            max={31}
-            className="w-16"
-            value={value.day}
-            onChange={(event) =>
-              onChange({ ...value, day: event.target.value })
-            }
-          />
-        </>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent alignItemWithTrigger={false}>
+          {kinds.map((kind) => (
+            <SelectItem key={kind.value} value={kind.value}>
+              {kind.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {value.kind !== "none" && (
+        <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          {value.kind === "days" && (
+            <>
+              every
+              <NumberField
+                label="Days between"
+                value={value.every}
+                onChange={(every) => onChange({ ...value, every })}
+              />
+              days
+            </>
+          )}
+          {value.kind === "weekly" && (
+            <>
+              on
+              <ToggleGroup
+                multiple
+                aria-label="Weekdays"
+                variant="outline"
+                size="sm"
+                spacing={0}
+                value={value.weekdays.map(String)}
+                onValueChange={(chosen) =>
+                  onChange({ ...value, weekdays: chosen.map(Number) })
+                }
+              >
+                {weekdays.map((weekday) => (
+                  <ToggleGroupItem
+                    key={weekday}
+                    value={String(weekday)}
+                    aria-label={weekdayName(weekday, "long")}
+                  >
+                    {weekdayName(weekday, "short").slice(0, 2)}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </>
+          )}
+          {value.kind === "monthly" && (
+            <>
+              on day
+              <NumberField
+                label="Day of the month"
+                value={value.day}
+                onChange={(day) => onChange({ ...value, day })}
+              />
+            </>
+          )}
+        </span>
       )}
     </>
+  );
+}
+
+/** A whole number typed as digits; the draft checks its range. */
+function NumberField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Input
+      aria-label={label}
+      inputMode="numeric"
+      className="w-14"
+      value={value}
+      onChange={(event) => onChange(event.target.value.replace(/\D/g, ""))}
+    />
   );
 }

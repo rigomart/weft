@@ -28,7 +28,7 @@ export function followUpLabel(
   locale?: string,
 ): string {
   const day = dayLabel(date.day, today, locale);
-  return date.time === null ? day : `${day}, ${date.time.replace(/^0/, "")}`;
+  return date.time === null ? day : `${day}, ${timeName(date.time)}`;
 }
 
 function dayLabel(day: CalendarDay, today: CalendarDay, locale?: string) {
@@ -55,7 +55,7 @@ function utcMs(day: CalendarDay): number {
   return Date.parse(`${day}T00:00:00Z`);
 }
 
-/** A Repeat's rhythm, as a card on Now shows it after ↻: "every Sunday", "every 3 days". */
+/** A Repeat's rhythm, as a row on Now shows it after ↻: "every Sunday", "every 3 days". */
 export function repeatLabel(repeat: Repeat, locale?: string): string {
   switch (repeat.kind) {
     case "days":
@@ -97,4 +97,73 @@ function ordinal(n: number): string {
   const suffix = { one: "st", two: "nd", few: "rd", other: "th" } as const;
   const rule = new Intl.PluralRules("en-US", { type: "ordinal" }).select(n);
   return `${n}${suffix[rule as keyof typeof suffix] ?? "th"}`;
+}
+
+/** Local midnight on `day`, as the calendar picker takes it. */
+export function dateOf(day: CalendarDay): Date {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Date(y!, m! - 1, d!);
+}
+
+export function addDays(day: CalendarDay, n: number): CalendarDay {
+  const date = dateOf(day);
+  date.setDate(date.getDate() + n);
+  return localDay(date);
+}
+
+/** "Sun, Nov 15", or "Sunday, November 15" when `long`; with the year when it is not this year. */
+export function dayName(
+  day: CalendarDay,
+  today: CalendarDay,
+  long = false,
+  locale?: string,
+): string {
+  return dateOf(day).toLocaleDateString(locale, {
+    weekday: long ? "long" : "short",
+    month: long ? "long" : "short",
+    day: "numeric",
+    year: day.slice(0, 4) === today.slice(0, 4) ? undefined : "numeric",
+  });
+}
+
+/** "9:30" from "09:30", as a card shows a time. */
+export function timeName(time: string): string {
+  return time.replace(/^0/, "");
+}
+
+/**
+ * A time of day typed the way people type one: "9", "930", "9:30", "9.30", "14h15", "2pm",
+ * "2:30 pm". Gives "HH:MM", or undefined when it is not a time.
+ */
+export function parseTime(text: string): string | undefined {
+  const match = /^(\d{1,2})(?:[:.h]?(\d{2}))?\s*(am|pm|a|p)?$/.exec(
+    text.trim().toLowerCase(),
+  );
+  if (!match) return undefined;
+  let hour = Number(match[1]);
+  const minute = match[2] === undefined ? 0 : Number(match[2]);
+  const half = match[3]?.[0];
+  if (minute > 59) return undefined;
+  if (half) {
+    if (hour < 1 || hour > 12) return undefined;
+    hour = (hour % 12) + (half === "p" ? 12 : 0);
+  }
+  if (hour > 23) return undefined;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+/** Every half hour from 7:00 to 21:30: the times offered before anything is typed. */
+export const commonTimes: readonly string[] = Array.from(
+  { length: 30 },
+  (_, i) =>
+    `${String(7 + Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`,
+);
+
+/** The days offered before the calendar: today, tomorrow, and a week from today. */
+export function quickDays(today: CalendarDay) {
+  return [
+    { label: "Today", day: today },
+    { label: "Tomorrow", day: addDays(today, 1) },
+    { label: "Next week", day: addDays(today, 7) },
+  ] as const;
 }
