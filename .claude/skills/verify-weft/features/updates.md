@@ -36,7 +36,7 @@ On [Now](now.md), an Update with a Follow-up date shows "↳ <the first Entry's 
 
 ## Not covered
 
-- Pulling part of an Entry out, in [Pull out selection](pull-out.md), and the Thread's story (#16).
+- Pulling part of an Entry out, in [Pull out selection](pull-out.md), and the Thread's story, in [A Thread's story](thread-story.md).
 - A refusal while adding, which the window cannot cause. The box shows `Weft refused this update: …` or `Weft couldn't save this update: …`.
 
 ## Traps

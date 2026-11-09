@@ -10,6 +10,7 @@ import {
 import { EntryPanel } from "./entry-panel.tsx";
 import { NowView, useCaptureBox } from "./now.tsx";
 import { ThreadPanel } from "./thread-panel.tsx";
+import { ThreadStoryList } from "./thread-story.tsx";
 import { useEntries, useThreads, useToday } from "./weft-state.ts";
 
 /** The three views, by their working names in GLOSSARY.md. */
@@ -100,7 +101,16 @@ export function App({ weft }: { weft: Weft }) {
           weft={weft}
           thread={openThread}
           onClose={() => setOpen(null)}
-        />
+        >
+          <ThreadStoryList
+            threadId={openThread.threadId}
+            entries={entries}
+            threads={threads}
+            today={today}
+            onOpen={onOpen}
+            onOpenThread={onOpenThread}
+          />
+        </ThreadPanel>
       )}
     </div>
   );

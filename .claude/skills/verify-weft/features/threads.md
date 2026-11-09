@@ -34,7 +34,7 @@ Read Now with `JSON.stringify([...document.querySelectorAll('[role=tabpanel]:not
 
 ## Not covered
 
-- The Thread's story in its panel (#16), and Updates' Threads (#14).
+- The Thread's story, in [A Thread's story](thread-story.md); Updates' Threads, in [Updates](updates.md).
 - A refusal or failure, which the window cannot cause. The panel shows `Weft refused this change: …` or `Weft couldn't save this change: …`.
 
 ## Traps
