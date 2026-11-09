@@ -140,10 +140,6 @@ export function ThemeProvider({
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.repeat) {
-        return;
-      }
-
       if (event.metaKey || event.ctrlKey || event.altKey) {
         return;
       }
@@ -153,6 +149,14 @@ export function ThemeProvider({
       }
 
       if (event.key.toLowerCase() !== "d") {
+        return;
+      }
+
+      // An unhandled D goes on to the macOS app menu, where it matches the hidden
+      // fn+D Start Dictation item and asks to turn on Dictation.
+      event.preventDefault();
+
+      if (event.repeat) {
         return;
       }
 
