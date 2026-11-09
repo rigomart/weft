@@ -50,6 +50,7 @@ const commandTypes = [
   "take entry off thread",
   "set follow-up date",
   "clear follow-up date",
+  "complete follow-up date",
   "start thread",
   "rename thread",
   "resolve thread",
@@ -346,6 +347,94 @@ export function describeContract(
       });
       expect(await read({ type: "entries" })).toEqual([
         expect.objectContaining({ followUpDate: null }),
+      ]);
+    });
+
+    test("completing a Follow-up date clears it and keeps the Entry", async () => {
+      const { weft, id, read, write, changesUntil } = await setup();
+      const checkup = await write("Book the checkup");
+      const chair = await write("Desk chair?");
+      for (const entryId of [checkup, chair]) {
+        await weft.run({
+          type: "set follow-up date",
+          eventId: id("event"),
+          entryId,
+          followUpDate: {
+            day: calendarDay("2026-11-08"),
+            time: timeOfDay("09:30"),
+            repeat: null,
+          },
+        });
+      }
+
+      await weft.run({
+        type: "complete follow-up date",
+        eventId: id("event"),
+        entryId: checkup,
+      });
+
+      expect(await read({ type: "entries" })).toEqual([
+        expect.objectContaining({
+          entryId: chair,
+          followUpDate: expect.anything(),
+        }),
+        expect.objectContaining({
+          entryId: checkup,
+          body: "Book the checkup",
+          putAway: false,
+          followUpDate: null,
+        }),
+      ]);
+      expect((await changesUntil(5)).at(-1)).toEqual(["entries"]);
+    });
+
+    test("refuses to complete a Follow-up date an Entry does not have", async () => {
+      const { weft, id, read, write } = await setup();
+      const entryId = await write("Desk chair?");
+      const missing = id("entry");
+      await refused(
+        weft.run({
+          type: "complete follow-up date",
+          eventId: id("event"),
+          entryId,
+        }),
+        "not found",
+        `Entry ${entryId} has no Follow-up date.`,
+      );
+      await refused(
+        weft.run({
+          type: "complete follow-up date",
+          eventId: id("event"),
+          entryId: missing,
+        }),
+        "not found",
+        `No Entry ${missing}.`,
+      );
+
+      await weft.run({
+        type: "set follow-up date",
+        eventId: id("event"),
+        entryId,
+        followUpDate: {
+          day: calendarDay("2026-11-08"),
+          time: null,
+          repeat: null,
+        },
+      });
+      const complete: Command = {
+        type: "complete follow-up date",
+        eventId: id("event"),
+        entryId,
+      };
+      await weft.run(complete);
+      await weft.run(complete);
+      await refused(
+        weft.run({ ...complete, eventId: id("event") }),
+        "not found",
+        `Entry ${entryId} has no Follow-up date.`,
+      );
+      expect(await read({ type: "entries" })).toEqual([
+        expect.objectContaining({ entryId, followUpDate: null }),
       ]);
     });
 

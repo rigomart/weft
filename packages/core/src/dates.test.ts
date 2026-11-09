@@ -4,6 +4,7 @@ import {
   isCalendarDay,
   isInstant,
   isTimeOfDay,
+  localCalendarDay,
 } from "./dates.ts";
 
 test("an instant is UTC to the millisecond", () => {
@@ -49,4 +50,14 @@ test("an instant cannot be made from a time outside years 0000 to 9999", () => {
   );
   expect(() => instantFromMs(Date.UTC(10000, 0, 1))).toThrow(SyntaxError);
   expect(() => instantFromMs(Number.NaN)).toThrow(RangeError);
+});
+
+test("the local calendar day is the device's, not UTC's", () => {
+  const lateEvening = new Date(2026, 10, 8, 23, 59).getTime();
+  const midnight = new Date(2026, 10, 9, 0, 0).getTime();
+  expect<string>(localCalendarDay(lateEvening)).toBe("2026-11-08");
+  expect<string>(localCalendarDay(midnight)).toBe("2026-11-09");
+  expect<string>(localCalendarDay(new Date(999, 0, 2).getTime())).toBe(
+    "0999-01-02",
+  );
 });

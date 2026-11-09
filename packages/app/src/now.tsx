@@ -3,14 +3,23 @@ import {
   timeOfDay,
   WeftError,
   type CalendarDay,
+  type EntryId,
   type EntryListItem,
   type FollowUpDate,
   type Weft,
 } from "@weft/contracts";
 import { cn } from "cn";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 
 import { createCapture } from "./capture.ts";
+import { createCompletion } from "./complete.ts";
 import { Button } from "./components/ui/button.tsx";
 import { Field, FieldError } from "./components/ui/field.tsx";
 import { Input } from "./components/ui/input.tsx";
@@ -99,6 +108,42 @@ export function NowView({
     [entries, today],
   );
   const box = useRef<HTMLInputElement>(null);
+  const {
+    completing,
+    failure: completeFailure,
+    complete,
+  } = useCompletion(weft);
+  const comingBack = useRef<HTMLDivElement>(null);
+  const refocus = useRef<{ button: HTMLButtonElement; at: number } | null>(
+    null,
+  );
+
+  async function onComplete(entry: EntryListItem, button: HTMLButtonElement) {
+    if (document.activeElement === button) {
+      refocus.current = { button, at: completeButtons().indexOf(button) };
+    }
+    if (!(await complete(entry)) && refocus.current?.button === button) {
+      refocus.current = null;
+    }
+  }
+
+  function completeButtons(): HTMLButtonElement[] {
+    return [
+      ...(comingBack.current?.querySelectorAll<HTMLButtonElement>(
+        "button[data-complete]",
+      ) ?? []),
+    ];
+  }
+
+  // A completed card unmounts with its focused ✓: focus the ✓ that took its place, or the box.
+  useLayoutEffect(() => {
+    const pending = refocus.current;
+    if (!pending || pending.button.isConnected) return;
+    refocus.current = null;
+    if (document.activeElement !== document.body) return;
+    const buttons = completeButtons();
+    (buttons[Math.min(pending.at, buttons.length - 1)] ?? box.current)?.focus();
+  }, [groups]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -143,8 +188,9 @@ export function NowView({
         <FieldError>{failure}</FieldError>
       </form>
       <FieldError>{listFailure}</FieldError>
+      <FieldError>{completeFailure}</FieldError>
       <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="flex flex-col gap-5">
+        <div ref={comingBack} className="flex flex-col gap-5">
           {groups.length === 0 && (
             <p className="text-sm text-muted-foreground">
               Nothing is coming back.
@@ -168,11 +214,25 @@ export function NowView({
                     variant="outline"
                     size="sm"
                     className={cn(
-                      "flex-col items-stretch gap-1",
+                      "relative flex-col items-stretch gap-1",
                       group.name === "Late" && "border-late/40 bg-late/5",
                     )}
                   >
-                    <ItemContent>{entry.body}</ItemContent>
+                    <ItemContent className="pr-7">{entry.body}</ItemContent>
+                    <Button
+                      variant="outline"
+                      size="icon-xs"
+                      className="absolute top-2 right-2 rounded-full text-muted-foreground hover:text-foreground"
+                      aria-label={`Complete "${entry.body}"`}
+                      title="Complete"
+                      disabled={completing.has(entry.entryId)}
+                      data-complete=""
+                      onClick={(event) =>
+                        onComplete(entry, event.currentTarget)
+                      }
+                    >
+                      ✓
+                    </Button>
                     <ItemDescription
                       className={cn(
                         "self-end text-xs",
@@ -221,6 +281,41 @@ export function NowView({
       </div>
     </div>
   );
+}
+
+function useCompletion(weft: Weft) {
+  const completeOne = useMemo(() => createCompletion(weft), [weft]);
+  const [completing, setCompleting] = useState<ReadonlySet<EntryId>>(
+    () => new Set(),
+  );
+  const [failure, setFailure] = useState<string>();
+
+  /** Resolves to true once the Follow-up date is completed. */
+  async function complete(entry: EntryListItem): Promise<boolean> {
+    const { entryId, followUpDate } = entry;
+    if (followUpDate === null || completing.has(entryId)) return false;
+    setCompleting((current) => new Set(current).add(entryId));
+    try {
+      await completeOne(entryId, followUpDate);
+      setFailure(undefined);
+      return true;
+    } catch (error) {
+      setFailure(
+        error instanceof WeftError
+          ? `Weft refused to complete "${entry.body}": ${error.message}`
+          : `Weft couldn't complete "${entry.body}": ${messageOf(error)}`,
+      );
+      return false;
+    } finally {
+      setCompleting((current) => {
+        const next = new Set(current);
+        next.delete(entryId);
+        return next;
+      });
+    }
+  }
+
+  return { completing, failure, complete };
 }
 
 function GroupHeading({ name, count }: { name: string; count: number }) {
