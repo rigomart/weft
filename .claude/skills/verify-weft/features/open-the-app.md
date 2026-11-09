@@ -20,6 +20,9 @@ Starting Weft opens a window with the three views as tabs in its header, Now sel
 4. This run's lines in `appLog` include `Weft opened <database> (SQLite <version>)` with the instance's own `database` path from `env`, then `Weft showed app://weft/`.
 5. `verify db "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name"` prints the instance's `database` and `rows` `[{"name":"built_tables"},{"name":"device"},{"name":"entries"},{"name":"entry_threads"},{"name":"events"},{"name":"threads"}]`, and `verify db "SELECT count(*) AS events FROM events"` prints `rows` `[{"events":0}]`: a new log with nothing in it.
 6. `verify doctor` is `ok` with `windowMessages` `[]`.
+7. `press d` with focus on the page body (`document.activeElement.tagName` is `BODY` right after `connect`) switches `<html>`'s class and opens no macOS window. This lists the on-screen windows of macOS's Dictation and Emoji & Symbols prompts, across all apps:
+   `osascript -l JavaScript -e 'ObjC.import("CoreGraphics"); JSON.stringify(ObjC.deepUnwrap(ObjC.castRefToObject($.CGWindowListCopyWindowInfo($.kCGWindowListOptionOnScreenOnly, 0))).map(w => w.kCGWindowOwnerName).filter(n => n === "Dictation" || n === "Emoji & Symbols"))'`
+   It prints `[]` before the press and again after `wait 2500`. If it is not `[]` before the press, another app has one open: the check is `INCONCLUSIVE`. It printed `["Dictation"]` when `d` brought up "Do you want to enable Dictation?" (see the skill's Gotchas).
 
 ## Traps
 
