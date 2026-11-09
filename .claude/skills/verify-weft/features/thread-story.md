@@ -28,7 +28,7 @@ Read the story with `JSON.stringify([...document.querySelectorAll('aside[aria-la
 
 ## Not covered
 
-- The History view (#17).
+- [History](history.md).
 
 ## Traps
 

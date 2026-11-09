@@ -117,7 +117,7 @@ export function quietThreads(
 }
 
 /** An Update is put away with the Entry it was added to. */
-function isPutAway(
+export function isPutAway(
   entry: EntryListItem,
   byId: ReadonlyMap<EntryId, EntryListItem>,
 ): boolean {
