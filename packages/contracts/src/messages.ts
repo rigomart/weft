@@ -135,6 +135,7 @@ const entryListItem: Reader<EntryListItem> = record({
   parentEntryId: nullable(entryId),
   putAway: boolean,
   followUpDate: nullable(followUpDate),
+  completed: nullable(record({ at: instant, followUpDate })),
   threadIds: list(threadId),
 });
 

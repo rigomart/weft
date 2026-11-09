@@ -31,7 +31,7 @@ Read Now with this `eval`. Each item is `<body> | <rhythm and date> | <datetime>
 
 ## Not covered
 
-- Editing or removing a Repeat later (#12).
+- Editing or removing a Repeat later, which [The entry panel](entry-panel.md) covers.
 - A Repeat that would pass 9999-12-31, which the store fails on; no date field reaches it.
 
 ## Traps

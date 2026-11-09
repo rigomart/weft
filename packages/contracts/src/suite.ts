@@ -167,6 +167,7 @@ export function describeContract(
         parentEntryId: null,
         putAway: false,
         followUpDate: null,
+        completed: null,
         threadIds: [],
       });
       expect(entry!.writtenAt >= before && entry!.writtenAt <= after).toBe(
@@ -305,6 +306,180 @@ export function describeContract(
       });
       expect(await read({ type: "entries" })).toEqual([
         expect.objectContaining({ entryId: chair, putAway: false }),
+      ]);
+    });
+
+    test("a deleted Entry's Updates follow from what it followed from", async () => {
+      const { weft, id, read, write } = await setup();
+      const claim = await write("Insurance claim for the physio");
+      const call = await write("Called the insurer", claim);
+      const form = await write("Sent them the form", call);
+      const reply = await write("They want the receipt too", call);
+
+      await weft.run({
+        type: "delete entry",
+        eventId: id("event"),
+        entryId: call,
+      });
+      expect(await read({ type: "entries" })).toEqual([
+        expect.objectContaining({ entryId: reply, parentEntryId: claim }),
+        expect.objectContaining({ entryId: form, parentEntryId: claim }),
+        expect.objectContaining({ entryId: claim, parentEntryId: null }),
+      ]);
+
+      await weft.run({
+        type: "delete entry",
+        eventId: id("event"),
+        entryId: claim,
+      });
+      expect(await read({ type: "entries" })).toEqual([
+        expect.objectContaining({ entryId: reply, parentEntryId: null }),
+        expect.objectContaining({ entryId: form, parentEntryId: null }),
+      ]);
+    });
+
+    test("an Update is on its first Entry's Threads, and keeps them when that Entry is deleted", async () => {
+      const { weft, id, read, write, startThread } = await setup();
+      const claim = await write("Insurance claim for the physio");
+      const call = await write("Called the insurer", claim);
+      const form = await write("Sent them the form", call);
+      const insurance = await startThread("Insurance");
+      const back = await startThread("Back");
+      await weft.run({
+        type: "put entry on thread",
+        eventId: id("event"),
+        entryId: claim,
+        threadId: insurance,
+      });
+      await weft.run({
+        type: "put entry on thread",
+        eventId: id("event"),
+        entryId: form,
+        threadId: back,
+      });
+      expect(await read({ type: "entries" })).toEqual([
+        expect.objectContaining({
+          entryId: form,
+          threadIds: [insurance, back],
+        }),
+        expect.objectContaining({
+          entryId: call,
+          threadIds: [insurance, back],
+        }),
+        expect.objectContaining({
+          entryId: claim,
+          threadIds: [insurance, back],
+        }),
+      ]);
+
+      await weft.run({
+        type: "delete entry",
+        eventId: id("event"),
+        entryId: claim,
+      });
+      await weft.run({
+        type: "take entry off thread",
+        eventId: id("event"),
+        entryId: call,
+        threadId: insurance,
+      });
+      expect(await read({ type: "entries" })).toEqual([
+        expect.objectContaining({
+          entryId: form,
+          parentEntryId: call,
+          threadIds: [back],
+        }),
+        expect.objectContaining({
+          entryId: call,
+          parentEntryId: null,
+          threadIds: [back],
+        }),
+      ]);
+    });
+
+    test("a deleted Entry can't be changed, and its ID stays taken", async () => {
+      const { weft, id, read, write } = await setup();
+      const entryId = await write("Desk chair?");
+      await weft.run({ type: "delete entry", eventId: id("event"), entryId });
+
+      for (const command of [
+        { type: "edit entry", eventId: id("event"), entryId, body: "Chair" },
+        { type: "put entry away", eventId: id("event"), entryId },
+        { type: "delete entry", eventId: id("event"), entryId },
+        {
+          type: "write entry",
+          eventId: id("event"),
+          entryId: id("entry"),
+          body: "Bought one",
+          parentEntryId: entryId,
+        },
+      ] satisfies Command[]) {
+        await refused(weft.run(command), "not found", `No Entry ${entryId}.`);
+      }
+      await refused(
+        weft.run({
+          type: "write entry",
+          eventId: id("event"),
+          entryId,
+          body: "Desk chair?",
+          parentEntryId: null,
+        }),
+        "already exists",
+        `Entry ${entryId} already exists.`,
+      );
+      expect(await read({ type: "entries" })).toEqual([]);
+    });
+
+    test("an Entry lists its last completion until a Follow-up date is set or cleared", async () => {
+      const { weft, id, read, write } = await setup();
+      const entryId = await write("Book the checkup");
+      const date: FollowUpDate = {
+        day: calendarDay("2026-11-08"),
+        time: timeOfDay("09:30"),
+        repeat: null,
+      };
+      const set = (followUpDate: FollowUpDate) =>
+        weft.run({
+          type: "set follow-up date",
+          eventId: id("event"),
+          entryId,
+          followUpDate,
+        });
+      await set(date);
+      expect(await read({ type: "entries" })).toEqual([
+        expect.objectContaining({ followUpDate: date, completed: null }),
+      ]);
+
+      const before = now();
+      await weft.run({
+        type: "complete follow-up date",
+        eventId: id("event"),
+        entryId,
+      });
+      const [completed] = await read({ type: "entries" });
+      expect(completed).toMatchObject({
+        followUpDate: null,
+        completed: { followUpDate: date },
+      });
+      expect(completed!.completed!.at >= before).toBe(true);
+
+      await set(date);
+      expect(await read({ type: "entries" })).toEqual([
+        expect.objectContaining({ followUpDate: date, completed: null }),
+      ]);
+
+      await weft.run({
+        type: "complete follow-up date",
+        eventId: id("event"),
+        entryId,
+      });
+      await weft.run({
+        type: "clear follow-up date",
+        eventId: id("event"),
+        entryId,
+      });
+      expect(await read({ type: "entries" })).toEqual([
+        expect.objectContaining({ followUpDate: null, completed: null }),
       ]);
     });
 
@@ -734,7 +909,7 @@ export function describeContract(
         ["entries"],
         ["threads"],
         ["entryThreads"],
-        ["entries", "entryThreads"],
+        ["entries"],
       ]);
     });
 

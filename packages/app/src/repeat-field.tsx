@@ -43,6 +43,18 @@ export function repeatOf(draft: RepeatDraft): Repeat | null | "incomplete" {
   }
 }
 
+export function draftOf(repeat: Repeat | null): RepeatDraft {
+  if (repeat === null) return noRepeat;
+  switch (repeat.kind) {
+    case "days":
+      return { kind: "days", every: String(repeat.every) };
+    case "weekly":
+      return { kind: "weekly", weekdays: repeat.weekdays };
+    case "monthly":
+      return { kind: "monthly", day: String(repeat.day) };
+  }
+}
+
 function wholeNumber(text: string, min: number, max: number) {
   const n = Number(text);
   return text.trim() !== "" && Number.isInteger(n) && n >= min && n <= max

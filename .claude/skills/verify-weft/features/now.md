@@ -1,6 +1,6 @@
 # Now
 
-Now is the tab the app opens on. Today's date heads it ("Sunday, November 8"), with the capture box under it. Below the box, Entries with a Follow-up date are grouped by when they come back: Late, Today, Tomorrow, This week (two to six days ahead) and Later. Late and Today come first, as outlined rows. Tomorrow, This week and Later follow as plainer rows, each group named on the left. Each group shows its count and holds only when it has Entries. Within a group, Entries go by day, then time, a day with no time first, then by when they were written. Beside the groups, the Loose list holds the top-level Entries on no Thread with no Follow-up date, newest first, under "On no thread, and fine as they are." Put-away Entries show in neither.
+Now is the tab the app opens on. Today's date heads it ("Sunday, November 8"), with the capture box under it. Below the box, Entries with a Follow-up date are grouped by when they come back: Late, Today, Tomorrow, This week (two to six days ahead) and Later. Late and Today come first, as outlined rows. Tomorrow, This week and Later follow as plainer rows, each group named on the left. Each group shows its count and holds only when it has Entries. Within a group, Entries go by day, then time, a day with no time first, then by when they were written. Beside the groups, the Loose list holds the top-level Entries on no Thread with no Follow-up date, newest first, under "On no thread, and fine as they are." Put-away Entries show in neither. Clicking a row opens its Entry in [the entry panel](entry-panel.md).
 
 A row shows a ✓ that completes its Follow-up date ([Complete a follow-up date](complete-a-follow-up-date.md)), the Entry's body in full, then its rhythm when it has a Repeat ("↻ every Sunday") and its date. Today and Tomorrow rows show only the time, or no date at all, since their group already names the day. Late is a fact, not an alarm: only Late's heading and dates take the Late colour, and the window title stays "Weft", with no count or badge.
 
@@ -33,7 +33,7 @@ Read Now with this `eval`. It returns each section of the open view as `[name, c
 ## Not covered
 
 - Crossing midnight with the window open, which needs the Mac's clock moved. `useToday` in `packages/app/src/now.tsx` handles it.
-- Put-away Entries, Updates and Entries on a Thread, which nothing in the window can make yet (#12, #13, #14). `packages/app/src/glance.test.ts` covers them.
+- Updates and Entries on a Thread, which nothing in the window can make yet (#13, #14). `packages/app/src/glance.test.ts` covers them. Putting an Entry away is in [The entry panel](entry-panel.md).
 
 ## Traps
 
