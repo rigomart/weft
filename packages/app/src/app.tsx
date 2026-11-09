@@ -8,6 +8,7 @@ import {
   TabsTrigger,
 } from "./components/ui/tabs.tsx";
 import { EntryPanel } from "./entry-panel.tsx";
+import { HistoryView } from "./history.tsx";
 import { NowView, useCaptureBox } from "./now.tsx";
 import { ThreadPanel } from "./thread-panel.tsx";
 import { ThreadStoryList } from "./thread-story.tsx";
@@ -76,7 +77,16 @@ export function App({ weft }: { weft: Weft }) {
           />
         </TabsContent>
         <TabsContent value="workspace" />
-        <TabsContent value="history" />
+        <TabsContent value="history">
+          <HistoryView
+            entries={entries}
+            threads={threads}
+            today={today}
+            openId={openEntry?.entryId ?? openThread?.threadId ?? null}
+            onOpen={onOpen}
+            onOpenThread={onOpenThread}
+          />
+        </TabsContent>
       </Tabs>
       {openEntry && (
         <EntryPanel

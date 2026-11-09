@@ -29,6 +29,7 @@
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-late: var(--late);
+  --color-late-tint: color-mix(in oklch, var(--late) 15%, var(--card));
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
