@@ -21,12 +21,16 @@ export interface HistoryLane {
   readonly thread: ThreadListItem;
   /** The lane's centre line. */
   readonly y: number;
-  /** Its solid line, from its first dot to today. */
+  /** Its solid line, from its first dot to today, or to when it was resolved. */
   readonly from: number;
   readonly to: number;
-  /** Where its dotted line into the future ends, at its last dot after today; null when none is. */
+  /**
+   * Where its dotted line into the future ends, at its last dot after today that is not put away;
+   * null when none is, and for a resolved Thread.
+   */
   readonly until: number | null;
   readonly entries: number;
+  /** Its Entries with a Follow-up date, not counting put-away ones. */
   readonly asking: number;
 }
 
@@ -40,6 +44,8 @@ export interface HistoryDot {
   /** It has a Follow-up date, so it sits there as an open dot. */
   readonly asking: boolean;
   readonly late: boolean;
+  /** It is put away, or an Update to an Entry that is. */
+  readonly away: boolean;
   /** Its Repeat's rhythm, "every Monday", when its Follow-up date repeats. */
   readonly rhythm: string | null;
   readonly label: { readonly text: string; readonly y: number } | null;
@@ -67,11 +73,10 @@ export interface HistoryLayout {
 
 /**
  * History, laid out from the Entries and Threads alone (ADR 0002): one lane per open Thread, ordered
- * by latest activity, with Threads that share Entries kept side by side, then a band for Loose
- * Entries. Time runs left to right over at least `width` pixels. Each Entry is a dot where it was
+ * by latest activity, with Threads that share Entries kept side by side, then one per resolved
+ * Thread, most recently resolved first, then a band for Loose Entries. Time runs left to right over at least `width` pixels. Each Entry is a dot where it was
  * completed, else where it was written, or an open dot at its Follow-up date, on every lane it is
- * on. Dots in one lane closer than `MIN_DOT_SPACING` are moved apart, away from today. Put-away Entries
- * and Entries only on resolved Threads are left out.
+ * on, put away or not. Dots in one lane closer than `MIN_DOT_SPACING` are moved apart, away from today.
  */
 export function historyLayout({
   entries,
@@ -87,16 +92,21 @@ export function historyLayout({
   width: number;
 }): HistoryLayout {
   const byId = new Map(entries.map((entry) => [entry.entryId, entry]));
-  const lanes = laneOrder(
-    threads.filter((thread) => thread.resolvedAt === null),
-    entries,
-  );
+  const resolved = threads
+    .filter((thread) => thread.resolvedAt !== null)
+    .sort((a, b) => compare(b.resolvedAt!, a.resolvedAt!));
+  const lanes = [
+    ...laneOrder(
+      threads.filter((thread) => thread.resolvedAt === null),
+      entries,
+    ),
+    ...resolved,
+  ];
   const laneOf = new Map(lanes.map((thread, i) => [thread.threadId, i]));
   const looseTop = TOP + lanes.length * LANE_HEIGHT;
   const laneY = (i: number) => TOP + i * LANE_HEIGHT + LANE_HEIGHT / 2;
 
   const shown = entries
-    .filter((entry) => !isPutAway(entry, byId))
     .map((entry) => ({
       entry,
       at: placedAt(entry),
@@ -104,17 +114,16 @@ export function historyLayout({
         .flatMap((threadId) => laneOf.get(threadId) ?? [])
         .sort((a, b) => a - b),
     }))
-    .filter(
-      ({ entry, lanes }) => lanes.length > 0 || entry.threadIds.length === 0,
-    )
+    .filter(({ entry, lanes }) => !awaitingItsThreads(entry, lanes))
     .sort((a, b) => a.at - b.at);
 
+  const times = [
+    ...shown.map((dot) => dot.at),
+    ...resolved.map((thread) => Date.parse(thread.resolvedAt!)),
+  ];
   const start =
-    Math.min(dateOf(today).getTime() - 30 * DAY, ...shown.map((d) => d.at)) -
-    8 * DAY;
-  const end =
-    Math.max(dateOf(today).getTime() + 40 * DAY, ...shown.map((d) => d.at)) +
-    12 * DAY;
+    Math.min(dateOf(today).getTime() - 30 * DAY, ...times) - 8 * DAY;
+  const end = Math.max(dateOf(today).getTime() + 40 * DAY, ...times) + 12 * DAY;
   const perDay = Math.max(7, width / ((end - start) / DAY));
   const rawX = (at: number) => ((at - start) / DAY) * perDay;
 
@@ -230,6 +239,7 @@ export function historyLayout({
         threadIds: on.map((i) => lanes[i]!.threadId),
         asking: date !== null,
         late: date !== null && daysFrom(today, date.day) < 0,
+        away: isPutAway(entry, byId),
         rhythm,
         label,
       };
@@ -269,15 +279,24 @@ export function historyLayout({
     })),
     lanes: lanes.map((thread, i) => {
       const on = dots.filter((dot) => dot.threadIds.includes(thread.threadId));
-      const after = on.filter((dot) => dot.x > todayX).map((dot) => dot.x);
+      const after = on
+        .filter((dot) => !dot.away && dot.x > todayX)
+        .map((dot) => dot.x);
+      const to =
+        thread.resolvedAt === null
+          ? todayX
+          : xOf(Date.parse(thread.resolvedAt));
       return {
         thread,
         y: laneY(i),
-        from: Math.min(todayX, ...on.map((dot) => dot.x)),
-        to: todayX,
-        until: after.length > 0 ? Math.max(...after) : null,
+        from: Math.min(to, ...on.map((dot) => dot.x)),
+        to,
+        until:
+          thread.resolvedAt === null && after.length > 0
+            ? Math.max(...after)
+            : null,
         entries: on.length,
-        asking: on.filter((dot) => dot.asking).length,
+        asking: on.filter((dot) => dot.asking && !dot.away).length,
       };
     }),
     dots,
@@ -347,6 +366,13 @@ function placedAt(entry: EntryListItem): number {
   return at.getTime();
 }
 
+function awaitingItsThreads(
+  entry: EntryListItem,
+  lanes: readonly number[],
+): boolean {
+  return lanes.length === 0 && entry.threadIds.length > 0;
+}
+
 function activeAt(entry: EntryListItem): number {
   return Date.parse(entry.completed?.at ?? entry.writtenAt);
 }
@@ -366,4 +392,8 @@ function monthsBetween(start: number, end: number): number[] {
     months.push(at.getTime());
   }
   return months;
+}
+
+function compare(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
 }

@@ -119,12 +119,17 @@ export function HistoryView({
                     height: LANE_HEIGHT,
                   } as CSSProperties
                 }
-                aria-label={`Open thread "${lane.thread.name}"`}
+                aria-label={`Open thread "${lane.thread.name}"${lane.thread.resolvedAt === null ? "" : ", resolved"}`}
                 aria-current={openId === lane.thread.threadId || undefined}
                 className="absolute inset-x-0 flex cursor-pointer flex-col justify-center gap-0.5 px-3 text-start outline-none hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset aria-[current]:bg-muted"
                 onClick={() => onOpenThread(lane.thread)}
               >
-                <span className="flex items-center gap-1.5 font-semibold">
+                <span
+                  className={cn(
+                    "flex items-center gap-1.5 font-semibold",
+                    lane.thread.resolvedAt !== null && "opacity-55",
+                  )}
+                >
                   <span
                     aria-hidden="true"
                     className="size-2 shrink-0 rounded-full bg-(--thread)"
@@ -132,8 +137,14 @@ export function HistoryView({
                   <span className="truncate">{lane.thread.name}</span>
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {lane.entries} {lane.entries === 1 ? "entry" : "entries"}
-                  {lane.asking > 0 && ` · ${lane.asking} asking`}
+                  {lane.thread.resolvedAt === null ? (
+                    <>
+                      {lane.entries} {lane.entries === 1 ? "entry" : "entries"}
+                      {lane.asking > 0 && ` · ${lane.asking} asking`}
+                    </>
+                  ) : (
+                    `resolved ${writtenOn(lane.thread.resolvedAt)}`
+                  )}
                 </span>
               </button>
             ))}
@@ -258,7 +269,10 @@ function Lines({ layout }: { layout: HistoryLayout }) {
           style={
             { "--thread-hue": threadHue(lane.thread.threadId) } as CSSProperties
           }
-          className="fill-none stroke-(--thread) [stroke-linecap:round]"
+          className={cn(
+            "fill-none stroke-(--thread) [stroke-linecap:round]",
+            lane.thread.resolvedAt !== null && "opacity-45",
+          )}
         >
           <line
             x1={lane.from}
@@ -323,7 +337,7 @@ function Dot({
   open: boolean;
   onOpen: (entryId: EntryId) => void;
 }) {
-  const { entry, x, ys, asking, late } = dot;
+  const { entry, x, ys, asking, late, away } = dot;
   const loose = threads.length === 0;
   const top = ys[0]!;
   const bottom = ys[ys.length - 1]!;
@@ -352,7 +366,7 @@ function Dot({
           render={
             <button
               type="button"
-              aria-label={`Open "${entry.body}"`}
+              aria-label={`Open "${entry.body}"${away ? ", put away" : ""}`}
               aria-current={open || undefined}
               data-entry={entry.entryId}
               onClick={() => onOpen(entry.entryId)}
@@ -365,6 +379,7 @@ function Dot({
               className={cn(
                 "absolute cursor-pointer rounded-full outline-none before:absolute before:-inset-1 focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current]:outline-2 aria-[current]:outline-solid aria-[current]:outline-offset-3 aria-[current]:outline-foreground",
                 spans && "border-[1.5px] border-muted-foreground bg-card",
+                away && "opacity-30",
               )}
             />
           }
@@ -395,6 +410,7 @@ function Dot({
             {dot.rhythm ? `↻ ${dot.rhythm} · ` : ""}
             {when} · {where}
             {entry.parentEntryId !== null && " · follows from an earlier entry"}
+            {away && " · put away"}
           </span>
         </TooltipContent>
       </Tooltip>
@@ -405,6 +421,7 @@ function Dot({
           className={cn(
             "pointer-events-none absolute text-[11px] leading-[14px] whitespace-nowrap text-muted-foreground",
             asking && "font-medium text-foreground",
+            away && "opacity-30",
           )}
         >
           {dot.label.text}
@@ -436,6 +453,10 @@ function Legend() {
         on several threads
       </span>
       <span>↻ repeats</span>
+      <span className="inline-flex items-center gap-1.5">
+        <i className={cn(mark, "bg-muted-foreground opacity-30")} />
+        put away
+      </span>
     </p>
   );
 }
